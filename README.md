@@ -86,7 +86,7 @@ Three platform shifts in 2026 make this approach work where naive alternatives d
 
 **Day 0 — Genesis (one conversation, ~1 hour)**
 
-You open a chat and say "start a new project with this playbook." The AI asks you 12 questions — what the product does, target platform, stack preferences, monetization, scale expectations, hard constraints, anything you've seen go wrong before. You answer. It locks the stack, writes three ADRs (stack choices, trust boundaries, repo topology), scaffolds the folder structure, writes 8–12 project-specific domain docs (product plan, DB schema, route map, design system, AI governance, etc.), generates the master build plan with every phase listed out (Phase 0 through however many you need), creates the empty watchlist and handoff register, and writes your cursor rules — all distilled from your answers and this playbook. You review the artifacts and approve. Genesis is done.
+You open Cursor in your repo and send two words: **"Start Genesis."** If the playbook is already in `docs/playbook/`, the cursor rule picks it up and the AI opens `00-genesis-and-build-cadence.md` automatically. If starting from scratch, you pass the raw GitHub URL once — after that it's always just "Start Genesis." The AI asks you 13 questions — what the product does, target platform, stack preferences, monetization, scale expectations, hard constraints, anything you've seen go wrong before, and a final open-ended catch-all for anything else (Notion docs, competitor references, prior failed attempts, industry context, whatever doesn't fit the structured questions). You answer. It locks the stack, writes three ADRs (stack choices, trust boundaries, repo topology), scaffolds the folder structure, writes 8–12 project-specific domain docs (product plan, DB schema, route map, design system, AI governance, etc.), generates the master build plan with every phase listed out (Phase 0 through however many you need), creates the empty watchlist and handoff register, and writes your cursor rules — all distilled from your answers and this playbook. You review the artifacts and approve. Genesis is done.
 
 **Day 0 still — human setup window (~30–60 min, before Phase 0)**
 
@@ -146,7 +146,7 @@ This is a **Document-Graph Router with episodic memory pruning**. Each phase doc
 
 | Mode | Trigger | What the AI does |
 |---|---|---|
-| **Genesis** *(one-time per project)* | Human invokes "start a new project with this playbook" | Interactive intake (12 questions) → stack lock with ADRs → repo topology decision → folder scaffold → write all six tiers of artifacts (project-specific, not template) → human approval gate → ready for loop |
+| **Genesis** *(one-time per project)* | Human sends "Start Genesis." | Interactive intake (13 questions) → stack lock with ADRs → repo topology decision → folder scaffold → write all six tiers of artifacts (project-specific, not template) → human approval gate → ready for loop |
 | **Build Loop** *(N times per phase)* | Human queues a loop prompt | Re-ground in master plan + active phase doc → pick the next coherent task or batch → implement → run the verification ladder (TypeScript → ESLint → Vitest → integration → Playwright) → self-review against the per-batch rubric → commit → update the phase doc's `Current implementation status` → append to watchlist if anything was deferred → stop at phase boundary |
 
 Genesis is interactive; the build loop is autonomous between phase boundaries. The phase boundary is the natural human review gate.

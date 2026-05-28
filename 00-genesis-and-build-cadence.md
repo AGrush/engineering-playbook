@@ -9,7 +9,7 @@ This document is the single entry point for starting a new project with the engi
 1. **Genesis** — a one-time, interactive intake the AI runs with the human to convert the playbook + the project requirements into a self-contained build plan.
 2. **Build Cadence** — the autonomous loop the AI runs to execute that plan, with verification gates and structured deferral so context never drifts and progress never stalls.
 
-The user-facing trigger is one sentence: **"Start a new project with this playbook."** That instruction tells the AI to open this file and run the protocol below.
+The user-facing trigger is two words: **"Start Genesis."** That tells the AI to open this file and run the protocol below.
 
 The rest of the playbook (`01-checkpoints-and-sanity.md` through `09-appendix.md`) defines *what good code looks like*. This file defines *how to build it with an AI agent without losing context or violating architecture*.
 
@@ -37,16 +37,54 @@ It turns a conversation about your project into an exhaustive, phased build plan
 
 ### How to start
 
+**If the playbook is already in your repo** (`docs/playbook/` exists):
+
+Open Cursor in the repo and send:
+
+```
+Start Genesis.
+```
+
+That's it. The cursor rule picks up the instruction, the AI opens this file, and the protocol begins.
+
+**If you're starting from scratch** (no repo yet, or playbook not yet copied in):
+
+Option A — reference the raw GitHub URL directly:
+
+```
+Read https://raw.githubusercontent.com/[your-org]/engineering-playbook/main/00-genesis-and-build-cadence.md and start Genesis.
+```
+
+Option B — clone the playbook first, then:
+
+1. Copy this playbook folder into your new repo at `docs/playbook/`.
+2. Open the repo in Cursor.
+3. Send: `Start Genesis.`
+
+**What the AI will do when it receives "Start Genesis":**
+
+1. Open this file (or confirm it's already loaded).
+2. Begin Step 1 of the Genesis Protocol — ask you the 13 intake questions.
+3. Work through all Genesis steps, producing artifacts as it goes.
+4. Present a summary of everything produced and wait for your approval.
+5. Only after approval: suggest the first loop prompt from §8.
+
+The AI will not start building until you explicitly approve the Genesis output. That's the human gate.
+
+**After Genesis — running the loop:**
+
+Queue one of the loop prompts from §8 in Cursor on repeat. The right variant depends on phase state (§8.5 decision table). Between phases, you review and re-queue. The loop is designed to be queued identically every iteration — it re-grounds itself from the docs each time, so the same prompt works throughout the build.
+
+**Full step-by-step for new users:**
+
 1. Copy this playbook into your new repo at `docs/playbook/`.
 2. Open the repo in Cursor.
-3. Paste this kickoff prompt:
-
-   > Start a new project with this playbook. Read `docs/playbook/00-genesis-and-build-cadence.md` and run the Genesis Protocol. Ask me everything you need to know about the project before producing the master build plan. Do not begin implementation until I approve the plan.
-
-4. Answer the AI's intake questions thoroughly. The more detail you give in Genesis, the less the loop has to ask later.
-5. Review the artifacts the AI produces (listed below). Edit anything that doesn't match your intent.
-6. Once approved, kick off the loop with one of the three loop prompts in §8 of the AI Agent section.
-7. Review PRs as they land. Approve checkpoint phases when reached. Hand back pre-shipping items as collected.
+3. Send `Start Genesis.` — answer all 13 intake questions thoroughly.
+4. Review the produced artifacts. Edit anything that doesn't match your intent.
+5. Do the human setup window (§8.6) — external service accounts, API keys, MCP config, `.env`.
+6. Send the Phase 0 loop prompt from §8. Review and repeat per phase.
+7. At each phase boundary, review the commit, check the watchlist, approve before re-queuing.
+8. Near launch, work through the pre-shipping handoff register (`15-…md`).
 
 ### What the AI will produce in Genesis
 
@@ -189,6 +227,7 @@ Ask the human these questions in order. Do not assume answers. Do not proceed un
 10. **Team profile** — solo dev / small team / hired contractors / multiple AI agents in parallel? (Determines tightness of cursor rules and ADR formality.)
 11. **Existing inputs** — Figma files, brand assets, content sources, API contracts, prior code, design references.
 12. **Anti-scope** — anything the human has seen done badly before and explicitly wants prevented (these become `Do not` items and anti-pattern cursor rules).
+13. **Everything else** — any other context that doesn't fit the above: competitor references, industry-specific domain knowledge, previous failed attempts and why they failed, links to Notion docs / Google Docs / specs / wireframes / prior codebases, anything the human thinks the AI should know before planning. There is no wrong answer here. If the human says "nothing else", move on. If they dump a wall of text, extract the relevant signals into the product plan and flag anything that changes answers to questions 1–12.
 
 Record the answers in `docs/build/01-product-and-architecture-plan.md` as you go. Do not summarize — capture verbatim where possible.
 
@@ -388,6 +427,8 @@ alwaysApply: true
 
 ## Build Loop Invariants (see docs/build/13-master-build-plan.md and docs/playbook/00-genesis-and-build-cadence.md)
 
+- WHEN the human sends "Start Genesis" (or "start genesis", case-insensitive): open `docs/playbook/00-genesis-and-build-cadence.md`, run the Genesis Protocol from Step 1, and do not begin any implementation until the human explicitly approves the produced artifacts.
+
 - ALWAYS re-ground at the start of every loop iteration: read `docs/build/13-master-build-plan.md` and the active phase doc fully. Do not skim. Do not proceed without identifying the next coherent task.
 
 - NEVER bulk-load the playbook (`docs/playbook/*`) into context during the loop. Open specific sections on demand only.
@@ -507,31 +548,77 @@ Before handing back to the human, verify every item below. Do not mark Genesis c
 
 #### Step 12 — Hand Back
 
-Print a summary to the human:
+Print the following summary to the human. Fill in the bracketed values from the actual Genesis output. Then stop completely — do not begin any implementation, do not start Phase 0, do not make any file changes until the human explicitly says to proceed.
 
 ```
-Genesis complete.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Genesis complete. Awaiting your approval.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Artifacts produced:
-  - docs/build/README.md
-  - docs/build/01-…
-  - docs/build/13-master-build-plan.md (N phases)
-  - docs/build/14-code-quality-watchlist.md
-  - docs/build/15-pre-shipping-handoff.md
-  - docs/adr/001-stack.md
-  - docs/adr/002-trust-boundaries.md
-  - docs/adr/003-repo-topology.md
-  - .cursor/rules/001-core-project.mdc … 011-build-loop.mdc
-  - CLAUDE.md
-  - .cursorignore
+  docs/build/README.md                     ← index / router
+  docs/build/01-… through [N]-….md         ← domain docs ([N] docs)
+  docs/build/13-master-build-plan.md       ← [X] phases, Phase 0 through Phase [Y]
+  docs/build/14-code-quality-watchlist.md  ← empty, ready for loop entries
+  docs/build/15-pre-shipping-handoff.md    ← empty, ready for loop entries
+  docs/adr/001-stack.md
+  docs/adr/002-trust-boundaries.md
+  docs/adr/003-repo-topology.md
+  .cursor/rules/001-core-project.mdc … 011-build-loop.mdc
+  CLAUDE.md
+  .cursorignore
 
-Recommended first loop prompt: <medium variant from §8>
-First phase to run: Phase 1 — Repository and Tooling Foundation
+Before starting the loop, please review:
+  1. docs/build/13-master-build-plan.md — does the phase order match your expectations?
+  2. docs/build/01-product-and-architecture-plan.md — is the product vision captured correctly?
+  3. .cursor/rules/001-core-project.mdc — are the prohibitions and anti-scope right?
+  If anything is wrong, tell me now and I'll fix it before the loop starts.
 
-Review the artifacts. When ready, queue the loop prompt. Stop gate is Phase 1 completion.
+Human setup window (do this before queuing the first loop prompt):
+  □ Create external service accounts (see docs/adr/001-stack.md for the list)
+  □ Add API keys / secrets to .env.local
+  □ Run: supabase init && supabase link (or equivalent)
+  □ Configure MCP servers in .cursor/mcp.json
+  □ Confirm the testing ladder passes clean:
+      pnpm typecheck && pnpm lint && pnpm test
+  Full checklist: docs/playbook/00-genesis-and-build-cadence.md §8.6
+
+When you're ready to start building, queue this prompt in Cursor on repeat:
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │ Quickly check the current repo state against the active phase doc and       │
+  │ docs/build/13-master-build-plan.md. Verify alignment with cursor rules.    │
+  │ Study what's next and check what we've already done to make sure we are     │
+  │ aligned and not diverging.                                                  │
+  │                                                                             │
+  │ Check docs/build/14-code-quality-watchlist.md and continue the next        │
+  │ coherent phase-aligned task or batch of tasks. We want decent progress      │
+  │ but not multiple unrelated things at the same time.                         │
+  │                                                                             │
+  │ Adhere to all coding practices and existing patterns. After each task,      │
+  │ double-check for changed code smells, documentation regression, stale       │
+  │ comments, or other errors. Check relevant logic and user flows. Check       │
+  │ performance, security, DRY, KISS, YAGNI, separation of concerns,           │
+  │ consistency, parallel code, maintainability, race conditions, divergence.   │
+  │                                                                             │
+  │ Make sure all relevant new tests pass. Do not stop for missing API keys;    │
+  │ implement env-based wiring and no-op / dev-safe fallbacks.                  │
+  │                                                                             │
+  │ Any left-over optimizations → docs/build/14-code-quality-watchlist.md      │
+  │ Any agent-blocked items → docs/build/15-pre-shipping-handoff.md            │
+  │                                                                             │
+  │ Create a local git commit after every big completed step.                   │
+  │ If the active phase is finished, stop and don't do anything.                │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  (This is the Medium loop prompt from §8.2. Use Large for big phases,
+   Small when a phase is nearly done. See §8.5 for the decision table.)
+
+First phase: Phase 0 — [title from master build plan]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Wait for human approval before any further action.
+Wait. Do not proceed until the human approves.
 
 ---
 
@@ -975,11 +1062,21 @@ If the same kind of drift recurs in multiple phases (e.g. the loop keeps consult
 
 ### 10. Quick Reference
 
-#### Genesis kickoff prompt (human pastes this once)
+#### Genesis kickoff prompts
+
+**If playbook is already in the repo** (`docs/playbook/` exists — the cursor rule handles the rest):
 
 ```
-Start a new project with this playbook. Read docs/playbook/00-genesis-and-build-cadence.md and run the Genesis Protocol. Ask me everything you need to know about the project before producing the master build plan. Do not begin implementation until I approve the plan.
+Start Genesis.
 ```
+
+**If starting from scratch** (no repo yet, or first-time setup):
+
+```
+Read https://raw.githubusercontent.com/[your-org]/engineering-playbook/main/00-genesis-and-build-cadence.md and start Genesis.
+```
+
+Both trigger the same protocol. The AI opens this file, begins the intake questions, produces all artifacts, waits for approval. It will not implement anything until the human approves.
 
 #### Files the loop must always read at iteration start
 
