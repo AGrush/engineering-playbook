@@ -20,7 +20,7 @@ git clone https://github.com/[your-org]/engineering-playbook docs/playbook
 Start Genesis.
 ```
 
-The AI asks you 13 questions about your project, produces the full build plan and all project artifacts, waits for your approval, then is ready to build. Nothing gets implemented until you say go.
+The AI asks you 15 questions about your project, produces the full build plan and all project artifacts, waits for your approval, then is ready to build. Nothing gets implemented until you say go.
 
 ---
 
@@ -99,7 +99,7 @@ Three platform shifts in 2026 make this approach work where naive alternatives d
 
 **Day 0 — Genesis (one conversation, ~1 hour)**
 
-You open Cursor in your repo and send two words: **"Start Genesis."** If the playbook is already in `docs/playbook/`, the cursor rule picks it up and the AI opens `00-genesis-and-build-cadence.md` automatically. If starting from scratch, you pass the raw GitHub URL once — after that it's always just "Start Genesis." The AI asks you 13 questions — what the product does, target platform, stack preferences, monetization, scale expectations, hard constraints, anything you've seen go wrong before, and a final open-ended catch-all for anything else (Notion docs, competitor references, prior failed attempts, industry context, whatever doesn't fit the structured questions). You answer. It locks the stack, writes three ADRs (stack choices, trust boundaries, repo topology), scaffolds the folder structure, writes 8–12 project-specific domain docs (product plan, DB schema, route map, design system, AI governance, etc.), generates the master build plan with every phase listed out (Phase 0 through however many you need), reviews the plan twice for dependency ordering and self-sufficiency, creates the empty watchlist and handoff register, and writes your cursor rules — all distilled from your answers and this playbook. You review the artifacts and approve. **Genesis then prints the exact loop prompt to copy-paste into Cursor, with a checklist of the human setup steps to do first.** You don't need to find or write the prompt — it's handed to you ready to go.
+You open Cursor in your repo and send two words: **"Start Genesis."** If the playbook is already in `docs/playbook/`, the cursor rule picks it up and the AI opens `00-genesis-and-build-cadence.md` automatically. If starting from scratch, you pass the raw GitHub URL once — after that it's always just "Start Genesis." The AI asks you 15 questions — what the product does, target platform, stack preferences, monetization, scale expectations, hard constraints, a full screen and feature inventory (every page and its key interactions), your design system approach (component library, brand tokens, fidelity expectation), anything you've seen go wrong before, and a final open-ended catch-all for anything else (Notion docs, Figma links, competitor references, prior failed attempts, industry context). You answer. It locks the stack, writes three ADRs (stack choices, trust boundaries, repo topology), scaffolds the folder structure, writes 8–12 project-specific domain docs (product plan, DB schema, route map, design system, AI governance, etc.), generates the master build plan with every phase listed out (Phase 0 through however many you need), reviews the plan twice for dependency ordering and self-sufficiency, creates the empty watchlist and handoff register, and writes your cursor rules — all distilled from your answers and this playbook. You review the artifacts and approve. **Genesis then prints the exact loop prompt to copy-paste into Cursor, with a checklist of the human setup steps to do first.** You don't need to find or write the prompt — it's handed to you ready to go.
 
 **Day 0 still — human setup window (~30–60 min, before Phase 0)**
 
@@ -159,7 +159,7 @@ This is a **Document-Graph Router with episodic memory pruning**. Each phase doc
 
 | Mode | Trigger | What the AI does |
 |---|---|---|
-| **Genesis** *(one-time per project)* | Human sends "Start Genesis." | Interactive intake (13 questions) → stack lock with ADRs → repo topology decision → folder scaffold → write all six tiers of artifacts (project-specific, not template) → human approval gate → ready for loop |
+| **Genesis** *(one-time per project)* | Human sends "Start Genesis." | Interactive intake (15 questions) → stack lock with ADRs → repo topology decision → folder scaffold → write all six tiers of artifacts (project-specific, not template) → human approval gate → ready for loop |
 | **Build Loop** *(N times per phase)* | Human queues a loop prompt | Re-ground in master plan + active phase doc → pick the next coherent task or batch → implement → run the verification ladder (TypeScript → ESLint → Vitest → integration → Playwright) → self-review against the per-batch rubric → commit → update the phase doc's `Current implementation status` → append to watchlist if anything was deferred → stop at phase boundary |
 
 Genesis is interactive; the build loop is autonomous between phase boundaries. The phase boundary is the natural human review gate.

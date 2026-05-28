@@ -64,7 +64,7 @@ Option B — clone the playbook first, then:
 **What the AI will do when it receives "Start Genesis":**
 
 1. Open this file (or confirm it's already loaded).
-2. Begin Step 1 of the Genesis Protocol — ask you the 13 intake questions.
+2. Begin Step 1 of the Genesis Protocol — ask you the 15 intake questions.
 3. Work through all Genesis steps, producing artifacts as it goes.
 4. Present a summary of everything produced and wait for your approval.
 5. Only after approval: suggest the first loop prompt from §8.
@@ -79,7 +79,7 @@ Queue one of the loop prompts from §8 in Cursor on repeat. The right variant de
 
 1. Copy this playbook into your new repo at `docs/playbook/`.
 2. Open the repo in Cursor.
-3. Send `Start Genesis.` — answer all 13 intake questions thoroughly.
+3. Send `Start Genesis.` — answer all 15 intake questions thoroughly.
 4. Review the produced artifacts. Edit anything that doesn't match your intent.
 5. Do the human setup window (§8.6) — external service accounts, API keys, MCP config, `.env`.
 6. Send the Phase 0 loop prompt from §8. Review and repeat per phase.
@@ -218,7 +218,7 @@ Before asking anything, send the following message verbatim so the human knows w
 ```
 Genesis started.
 
-I'm going to ask you 13 questions about your project. Your answers drive everything — the more detail you give now, the less the build loop has to guess or ask later. There are no wrong answers; "I don't know yet" and "skip / decide later" are valid for anything you're unsure of.
+I'm going to ask you 15 questions about your project. Your answers drive everything — the more detail you give now, the less the build loop has to guess or ask later. Questions 12 and 13 ask about your screens/features and design approach in detail, so take your time on those. There are no wrong answers; "I don't know yet" and "skip / decide later" are valid for anything you're unsure of.
 
 After the questions I'll produce:
   - A phased master build plan (your project broken into numbered phases)
@@ -248,9 +248,15 @@ Ask the human these questions in order. Do not assume answers. Do not proceed un
 8. **AI features in product** — none / one feature (e.g. chat) / AI-native? (Determines whether playbook §14A LLM evals content gets inlined.)
 9. **Hard constraints** — compliance (GDPR / HIPAA / PCI / SOC2), existing infrastructure to integrate with, language/framework constraints, anything non-negotiable.
 10. **Team profile** — solo dev / small team / hired contractors / multiple AI agents in parallel? (Determines tightness of cursor rules and ADR formality.)
-11. **Existing inputs** — Figma files, brand assets, content sources, API contracts, prior code, design references.
-12. **Anti-scope** — anything the human has seen done badly before and explicitly wants prevented (these become `Do not` items and anti-pattern cursor rules).
-13. **Everything else** — any other context that doesn't fit the above: competitor references, industry-specific domain knowledge, previous failed attempts and why they failed, links to Notion docs / Google Docs / specs / wireframes / prior codebases, anything the human thinks the AI should know before planning. There is no wrong answer here. If the human says "nothing else", move on. If they dump a wall of text, extract the relevant signals into the product plan and flag anything that changes answers to questions 1–12.
+11. **Existing inputs** — Figma files, brand assets, content sources, API contracts, prior code, design references. If Figma files exist, ask the human to share links or exported assets — these become source material for the design system domain doc and screen map.
+12. **Screen and feature inventory** — list every screen/page the product needs, even roughly. For each screen: what are the primary actions a user takes on it? What data does it display? What are the key interactive elements (forms, modals, tables, carousels, maps, etc.)? This doesn't need to be pixel-precise — a bullet list is enough. This drives the screen map domain doc and ensures no feature is missing from the build plan. If the human has a Figma file or written spec, that counts — they can paste a list or describe it conversationally.
+    - *Why this matters:* Without a screen inventory, the AI guesses which features exist and the build plan will have gaps. Gaps discovered mid-build become unplanned phases that disrupt the loop.
+13. **Design system and styling approach** — three sub-questions:
+    - *Component library:* Start from a library (shadcn/ui, Radix + custom, MUI, Mantine, Ant Design) or build components from scratch? The playbook recommends shadcn/ui (headless, composable, Tailwind-based, 2026 standard for React) unless there's a reason not to. Are there any existing brand constraints that override this?
+    - *Design fidelity expectation:* MVP/functional (structured and usable, not pixel-perfect), polished product (pixel-perfect, micro-interactions, motion), or somewhere in between? This determines whether a dedicated visual polish phase is warranted and how detailed the design system domain doc needs to be.
+    - *Brand tokens:* Are brand colors, typography, and spacing already defined (Figma variables, a style guide, a brand kit)? Or does the AI propose a palette based on the product vision? This becomes the `packages/design-tokens/` setup in Phase 1.
+14. **Anti-scope** — anything the human has seen done badly before and explicitly wants prevented (these become `Do not` items and anti-pattern cursor rules).
+15. **Everything else** — any other context that doesn't fit the above: competitor references, industry-specific domain knowledge, previous failed attempts and why they failed, links to Notion docs / Google Docs / specs / wireframes / prior codebases, anything the human thinks the AI should know before planning. There is no wrong answer here. If the human says "nothing else", move on. If they dump a wall of text, extract the relevant signals into the product plan and flag anything that changes answers to questions 1–14.
 
 Record the answers in `docs/build/01-product-and-architecture-plan.md` as you go. Do not summarize — capture verbatim where possible.
 
@@ -364,14 +370,17 @@ Produce phases using the template in §3 of this protocol. Phase enumeration heu
 Note: by the time the loop reaches Phase 0, cursor rules, ADRs, domain docs, the watchlist, the pre-shipping handoff, and `CLAUDE.md` already exist on disk — Genesis Steps 5–10 produced them. The master build plan starts after Genesis, not as part of it.
 
 - **Phase 0** — Pre-Build Lock (confirm Genesis outputs are in place, MVP boundaries clear, all domain docs reviewed by the human).
-- **Phase 1** — Repository and Tooling Foundation (covers §21A Checkpoint 1 items related to monorepo, TS strict, ESLint, Zod, env validation, test runner wiring).
-- **Phase 2** — `(§21A Checkpoint 1)` Day-1 Foundation Verification. Walk the §21A Checkpoint 1 list against the codebase; this is where Genesis's cursor rules and Phase 1's tooling get validated together.
-- **Phase 3 onwards** — Vertical slices of product work. Each phase is one coherent capability (e.g. "Web admin MVP", "Mobile app shell", "Event detail screen", "URL ingestion to draft", etc.).
-- **Phase N — `(§21A Checkpoint 2)` Pre-launch Readiness.** Walk Checkpoint 2 against codebase.
-- **Phase N+1 — Code Quality Watchlist Cleanup.** Run through `14-…` and resolve triggered items.
-- **Phase N+2 — Public Launch Preparation.** Real-device verification, seed data, smoke tests.
-- **Phase N+3 — `(§21A Checkpoint 3)` First Paying User Readiness** *(only if monetization is in MVP scope; else defer to post-launch)*.
-- **Phase N+4 — `(§21A Checkpoint 4)` Scale and Reliability** *(post-launch)*.
+- **Phase 1** — Repository, Tooling, and Design System Foundation. Two concerns always go in Phase 1 together:
+  1. *Tooling:* monorepo, TS strict, ESLint, Zod, env validation, test runner wiring (§21A Checkpoint 1 items).
+  2. *Design system:* `packages/design-tokens/` with brand colors, typography scale, spacing scale. Component library installed and configured (shadcn/ui by default, or the library chosen in Genesis question 13). Base layout components (shell, nav, page wrapper). This must be done in Phase 1, not later — all feature phases build on top of it. A design system retrofitted after 15 screens is a multi-week project.
+- **Phase 2** — `(§21A Checkpoint 1)` Day-1 Foundation Verification. Walk the §21A Checkpoint 1 list against the codebase; this is where Genesis's cursor rules and Phase 1's tooling + design system get validated together.
+- **Phase 3 onwards** — Vertical slices of product work. Each phase is one coherent capability (e.g. "Web admin MVP", "Mobile app shell", "Event detail screen", "URL ingestion to draft", etc.). **Styling approach for feature phases:** build each feature using real components from the design system — correct layout, correct token values, correct semantic HTML, usable and evaluable from day one. Do not use placeholder/unstyled markup with the intent to style it later. Do not do pixel-perfect polish mid-feature-build — that comes in the polish phase below.
+- **Phase N — Visual Polish Pass** *(only if design fidelity expectation from Genesis question 13 is "polished product" or "somewhere in between")*.* Walk every screen: micro-interactions, hover/focus/active states, focus rings (WCAG), responsive edge cases, dark mode if applicable, motion/animation, empty states, loading skeletons. This phase comes after all features are built and verified, so the AI has a stable target. It's fast because the structure is already correct — only visual details remain.
+- **Phase N+1 — `(§21A Checkpoint 2)` Pre-launch Readiness.** Walk Checkpoint 2 against codebase.
+- **Phase N+2 — Code Quality Watchlist Cleanup.** Run through `14-…` and resolve triggered items.
+- **Phase N+3 — Public Launch Preparation.** Real-device verification, seed data, smoke tests.
+- **Phase N+4 — `(§21A Checkpoint 3)` First Paying User Readiness** *(only if monetization is in MVP scope; else defer to post-launch)*.
+- **Phase N+5 — `(§21A Checkpoint 4)` Scale and Reliability** *(post-launch)*.
 
 Each phase doc field must be populated such that the loop, reading only that phase doc + cursor rules, has enough information to complete the phase without opening the playbook.
 
