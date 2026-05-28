@@ -4,7 +4,7 @@
 > ```bash
 > git clone https://github.com/[your-org]/engineering-playbook docs/playbook
 > ```
-> Then open the repo in Cursor and send `Start Genesis.` — the AI does everything else.
+> Then open the repo in Cursor and send `Start Genesis` — the AI does everything else.
 
 **Last reviewed: May 2026**
 
