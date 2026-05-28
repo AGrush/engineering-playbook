@@ -189,12 +189,13 @@ The playbook remains available as a reference manual you can open on demand (§1
 | Citing a playbook rule without opening the section in this turn | **Forbidden** — that's hallucination, not reference |
 | Resolving a gap by opening the playbook and not writing the resolution back into the phase doc | **Forbidden** — same gap must not require re-consultation next iteration |
 
-**Four triggers for opening a specific playbook section on demand:**
+**Five triggers for opening a specific playbook section on demand:**
 
 1. The phase doc is silent on a question that arose mid-task.
 2. A cursor rule cites a section and you need the full reasoning before applying it.
-3. You're about to make a non-trivial architectural choice the phase doc didn't anticipate.
-4. You are about to create a new `.md` file and the destination is not obvious — open playbook §17 Documentation Governance to route it through the taxonomy. If no row fits, write an ADR proposing the extension instead of inventing a new doc location.
+3. You're about to make a non-trivial architectural choice the phase doc didn't anticipate — open the relevant section, apply the rule, and **write an ADR** (`docs/adr/NNN-<slug>.md`) recording the decision, options considered, and why you chose this approach. Architectural decisions made mid-build without an ADR become invisible to future developers and AI sessions.
+4. You are about to write code that touches **authentication, data boundaries, LLM prompts, payment flows, or any OWASP Top 10 surface** — open `docs/playbook/05-security-observability.md` §12 to cross-check before implementing. Security mistakes are expensive to retrofit; this trigger fires proactively, not after the fact.
+5. You are about to create a new `.md` file and the destination is not obvious — open playbook §17 Documentation Governance to route it through the taxonomy. If no row fits, write an ADR proposing the extension instead of inventing a new doc location.
 
 **When you do open a section on demand:**
 
@@ -831,6 +832,7 @@ Before committing a batch, walk this list:
 - Tests added for high-priority AI failure modes? (Auth rejection, schema rejection, edge cases from extraction?)
 - Watchlist updated for any deferred work?
 - Provenance markers added for any playbook content inlined this turn?
+- **Architectural decision made mid-batch?** (If you chose between two approaches for anything non-trivial — caching strategy, integration method, queue topology, data model trade-off — write `docs/adr/NNN-<slug>.md` recording the decision, options considered, and why. Decisions that live only in `Current implementation status` are invisible to future sessions.)
 
 If any item fails, fix before commit. If you can't fix (e.g. the right fix is out of scope), add a watchlist entry.
 
