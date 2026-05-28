@@ -105,13 +105,13 @@ You open Cursor in your repo and send two words: **"Start Genesis."** If the pla
 
 Before queuing the first loop run, do the external wiring once: create service accounts (Supabase, Stripe, etc.), generate API keys and add them to `.env.local`, run `supabase init` / `supabase link`, configure MCP servers in `.cursor/mcp.json`, push the scaffold commit, confirm the testing ladder passes clean. This is the only time you need to interrupt the loop for external setup — the loop will log any mid-build blockers to the pre-shipping handoff register and keep moving. See `00-` §8.6 for the full checklist.
 
-**Day 0 still — Phase 0 (repo scaffold, CI, tooling)**
+**Day 0 still — Phase 0 (Pre-Build Lock)**
 
-You copy the loop prompt Genesis gave you and paste it into Cursor. The AI reads the master plan, finds Phase 0, opens the domain docs Phase 0 cites, sets up the monorepo, configures TypeScript + ESLint + Vitest + Playwright, wires CI, verifies the whole testing ladder passes. Updates Phase 0's status field with what it just did. Stops. You review the commit, paste the same prompt again for the next iteration.
+You copy the loop prompt Genesis gave you and paste it into Cursor. Phase 0 is the confirmation step — no code yet. The AI re-reads the master plan, confirms every domain doc exists and is reviewed, confirms the MVP boundaries match your intent, confirms the human setup window is complete. If anything is off, it stops and surfaces it before any code lands. This is the last cheap moment to fix Genesis output.
 
 **Day 1 — Phase 1 (repo, tooling, and design system foundation)**
 
-Same loop prompt. Phase 1 always covers two things together: the full monorepo and tooling setup (TypeScript strict, ESLint, Zod, env validation, test runner), and the complete design system foundation — Tailwind CSS v4, shadcn/ui copied into `packages/ui/`, design tokens wired in `packages/design-tokens/`, fonts via `next/font`, Lucide for icons. Both must land in Phase 1. Every subsequent feature phase builds on the design system — there's no "add styling later."
+Same loop prompt. Phase 1 is where actual code starts. It always covers two things together: the full monorepo and tooling setup (TypeScript strict, ESLint, Zod, env validation, test runner, CI wiring), and the complete design system foundation — Tailwind CSS v4, shadcn/ui copied into `packages/ui/`, design tokens wired in `packages/design-tokens/`, fonts via `next/font`, Lucide for icons. Both must land in Phase 1. Every subsequent feature phase builds on the design system — there's no "add styling later."
 
 **Day 2 — Phase 2 (§21A Checkpoint 1 verification)**
 

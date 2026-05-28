@@ -219,7 +219,16 @@ Before asking anything, send the following message verbatim so the human knows w
 ```
 Genesis started.
 
-I'm going to ask you 15 questions about your project. Your answers drive everything — the more detail you give now, the less the build loop has to guess or ask later. Questions 12 and 13 ask about your screens/features and design approach in detail, so take your time on those. There are no wrong answers; "I don't know yet" and "skip / decide later" are valid for anything you're unsure of.
+I'm going to ask you 15 questions about your project. Your answers drive everything — the more detail you give now, the less the build loop has to guess or ask later.
+
+A few questions have follow-ups attached — take your time on these in particular, because answers here drive the most expensive corrections if missed:
+
+- Q5 (backend + auth) — has follow-ups on user types, login methods, and how admin/staff permission scopes work (flat vs. scoped).
+- Q6 (money) — two separate sub-questions: how the app monetizes, and whether money flows through the product between users.
+- Q9 (hard constraints) — probes for internationalization, multi-currency, accessibility, data residency, and audit logging.
+- Q12 (screen inventory) and Q13 (design system) — drive the entire UI side of the build.
+
+There are no wrong answers; "I don't know yet" and "skip / decide later" are valid for anything you're unsure of.
 
 After the questions I'll produce:
   - A phased master build plan (your project broken into numbered phases)
@@ -243,11 +252,22 @@ Ask the human these questions in order. Do not assume answers. Do not proceed un
 2. **MVP scope** — what is in / what is explicitly out / what is future-phase?
 3. **Target platforms** — web only / mobile only / web + mobile / desktop / other?
 4. **Deployment expectations** — serverless (Vercel/CF Workers) / long-running (Fly.io/Render) / self-hosted / hybrid?
-5. **Backend choice and auth model** — BaaS (Supabase / Firebase) / custom server / hybrid? Follow up: how many distinct user types are there (e.g. guest, user, admin, staff)? Is there a public-facing side with no login, or is the whole app authenticated? Any social login (Google, Apple), magic link, or enterprise SSO needed? This determines DB schema complexity, RLS policy structure, and auth phase scope.
-6. **Monetization timing** — never / day-1 / post-MVP / post-PMF? (Determines whether playbook §20 content needs to be inlined now or deferred.)
+5. **Backend choice and auth model** — BaaS (Supabase / Firebase) / custom server / hybrid? Then walk these follow-ups in order:
+    - *User types:* how many distinct roles (e.g. guest, user, admin, staff, owner, contractor)? Is there a public-facing side with no login, or is the whole app authenticated?
+    - *Login methods:* email/password, magic link, social (Google / Apple), enterprise SSO, OTP — which apply?
+    - *Authorization scope — the "flat vs. scoped" question.* For any admin or staff role: do those users see *all* records of a given type, or only a subset assigned to them? Common scoped patterns: a property manager who only sees their assigned properties; a doctor who only sees their patients; a sales rep who only sees their accounts; a tenant admin who only sees their organization's data. **If scoping is present, ask: what is the assignment graph?** (e.g. "users have many property_assignments; each assignment points to one property; queries must join through assignment.") This determines whether you need a single `user_id` column on every table (flat) or a separate assignment/membership table (scoped) — the difference is the entire shape of RLS policies and admin queries. **Scoped-admin retrofit is one of the most expensive corrections to make mid-build.** Get this answer now or accept that the build will pause to retrofit it later.
+    - *Multi-tenancy:* if multiple organizations / clients / workspaces share the same database, every table needs a tenant identifier and every query needs tenant scoping. This is a stricter case of scoped admin — explicitly confirm whether the project is single-tenant or multi-tenant.
+6. **Money flows in the product** — two separate questions, do not conflate:
+    - *App monetization timing:* never / day-1 / post-MVP / post-PMF? This is about how *the application* makes money (subscription plan, freemium upgrade, one-time purchase). Determines whether playbook §20 content needs to be inlined now or deferred.
+    - *In-product money flows:* does money move *through the product* between users or to external parties? Examples: marketplace (guest pays platform, platform pays property owner), tipping (user pays creator), payouts (platform pays contributors), refunds, multi-currency, tax/VAT calculation, escrow, split payments, subscription proration, dunning. **If yes, this is a fundamentally different category from app monetization** — it needs its own domain doc (`NN-payments-and-marketplace.md`), its own ADR for the processor model (Stripe Connect destination charges vs. separate charges vs. Stripe Checkout vs. Paddle merchant of record), and its own phase. Marketplaces and money-routing products built with "we'll add Stripe later" framing always require rewrites. Ask explicitly: who pays whom? In what currency? With what split? What are the refund and dispute paths?
 7. **Scale expectations** — alpha (10s of users) / launch (1K) / scale (10K-100K) / hyperscale (100K+)? (Determines which §21A checkpoints become embedded phases.)
 8. **AI features in product** — none / one feature (e.g. chat) / AI-native? (Determines whether playbook §14A LLM evals content gets inlined.)
-9. **Hard constraints** — compliance (GDPR / HIPAA / PCI / SOC2), existing infrastructure to integrate with, language/framework constraints, anything non-negotiable.
+9. **Hard constraints** — compliance (GDPR / HIPAA / PCI / SOC2), existing infrastructure to integrate with, language/framework constraints, anything non-negotiable. Then specifically probe these dimensions that often get missed and become expensive retrofits:
+    - *Internationalization (i18n):* does the product need to support multiple languages? Multiple regions / locales? Right-to-left languages (Arabic, Hebrew)? URL strategy if multi-language (`/en/`, `/es/` subpaths, subdomains, accept-language negotiation)? Translation pipeline (Crowdin / Lokalise / Phrase / in-repo JSON files)? **If yes to any of these, locale negotiation must be wired into Phase 1 — every user-facing string, date, number, and URL is affected.** Retrofit cost scales with screen count.
+    - *Multi-currency:* if money is involved (see Q6) and users span regions, do prices display in the user's local currency? Are amounts *stored* in a single base currency and converted at display, or stored per-currency? Where do exchange rates come from?
+    - *Accessibility:* is WCAG 2.1 AA or AAA a hard requirement (legal / RFP / public-sector clients)? This changes the testing strategy and adds a dedicated phase rather than relying on the Visual Polish Pass.
+    - *Data residency:* must data stay in a specific region (EU-only for GDPR, Australia for IRAP, etc.)? Affects DB location, CDN edge selection, third-party processor selection.
+    - *Audit logging / immutable history:* required for HIPAA, financial regulation, or contract compliance? If yes, every state-change must be audit-logged from day one — cannot be retrofitted.
 10. **Team profile** — solo dev / small team / hired contractors / multiple AI agents in parallel? (Determines tightness of cursor rules and ADR formality.)
 11. **Existing inputs and third-party integrations** — Figma files, brand assets, content sources, API contracts, prior code, design references. If Figma files exist, ask the human to share links or exported assets — these become source material for the design system domain doc and screen map. Also prompt specifically: which third-party services will the app need? Common ones to ask about if not volunteered: transactional email (Resend / Postmark / SendGrid), push notifications, maps (Google Maps / Mapbox), video hosting/streaming (Mux / Cloudinary), file storage (S3 / Cloudinary / Supabase Storage), analytics (PostHog / Mixpanel), a CMS (Contentful / Sanity / Directus), customer support (Intercom / Crisp). Each confirmed integration gets a domain doc entry and at least one build phase.
 12. **Screen and feature inventory** — list every screen/page the product needs, even roughly. For each screen: what are the primary actions a user takes on it? What data does it display? What are the key interactive elements (forms, modals, tables, carousels, maps, etc.)? This doesn't need to be pixel-precise — a bullet list is enough. This drives the screen map domain doc and ensures no feature is missing from the build plan. If the human has a Figma file or written spec, that counts — they can paste a list or describe it conversationally.
@@ -328,7 +348,27 @@ If a folder is created, drop a one-line `README.md` inside it explaining what ki
 
 Based on the project context captured in Step 1, decide which domain docs this project needs. There is no fixed list — the set is determined by the project.
 
-**How to decide what to create:**
+**Step 5.0 — Project Archetype Lens (do this first)**
+
+Before walking the generic decision table below, open `docs/playbook/09-appendix.md` Appendix B "Project Archetype Lenses". Match this project to one or more archetypes based on the Step 1 answers:
+
+- Marketplace / two-sided platform — if Q6 says money flows between users through the product.
+- Multi-tenant SaaS / B2B with scoped admin — if Q5 indicated multi-tenancy or scoped admin roles.
+- Content / publishing / SEO-driven — if Q1 frames the product around editorial or directory content.
+- AI-native — if Q8 said one feature or AI-native.
+- Real-time / collaborative — if the product involves presence, live editing, multiplayer, or chat.
+- Mobile-first or mobile-only — if Q3 indicated mobile.
+- Internal tool / one-client — if Q1 said the user base is a single client or internal team.
+
+For each matched archetype, walk its concerns table in the appendix. Each concern in the table is either:
+- A domain doc to add to the Step 5.1 list below,
+- A cross-cutting concern that Step 6a's audit will check is ordered correctly,
+- A pre-shipping handoff item to log in Step 10,
+- A cursor rule addition.
+
+Note in `01-product-and-architecture-plan.md` which archetypes apply and what additional concerns were pulled in from the lens. **The archetype lens is the system's primary defence against the "playbook covers engineering but not domain patterns" gap.** Skipping it is the most common cause of mid-build retrofits.
+
+**Step 5.1 — Generic decision table**
 
 For each of the questions below, if the answer is yes, create the corresponding doc by opening the cited playbook sections, extracting what applies to *this* project, and combining it with the project-specific information from Step 1.
 
@@ -399,8 +439,16 @@ Re-read the entire master build plan as if you are the loop, starting cold at Ph
 2. **Phase ordering correct?** Could any two adjacent phases be swapped without breaking anything? If yes, re-order so dependencies always precede dependents.
 3. **Scope leak?** Does any phase do work that belongs to another phase? Each phase should be one coherent capability, not a grab-bag.
 4. **Gap detection — Step 1 coverage?** Go back to the Step 1 answers. Is every product requirement, hard constraint, anti-scope item, and input (Figma, brand, API contract, prior code) reflected somewhere in the phases? List any orphaned requirements and add phases or steps to cover them.
-5. **Gap detection — playbook coverage?** Every significant playbook rule that applies to this project should appear either as a phase step, a verification item, or a cursor rule. Scan the domain docs produced in Step 5. Is every rule they contain accounted for in the plan?
+5. **Gap detection — playbook coverage?** Every significant playbook rule that applies to this project should appear either as a phase step, a verification item, or a cursor rule. Walk the cited playbook sections (the ones each domain doc inlined from) one at a time, and for each numbered rule or anti-pattern in those sections, confirm it shows up somewhere in the plan/rules/docs *for this project*. A mechanical aid: grep `docs/build/` for `§N` provenance markers — every numbered section that informed a domain doc should be findable. Sections that were extracted from but produced no provenance marker anywhere are coverage holes. (A future enhancement to consider: a `scripts/verify-coverage.sh` that compares playbook section headings against `docs/build/**/*.md` provenance markers and flags orphans.)
 6. **§21A Checkpoint alignment?** The checkpoints in `01-checkpoints-and-sanity.md` are milestone gates. Confirm each applicable checkpoint is embedded as a dedicated verification phase, not buried inside a feature phase.
+7. **Cross-cutting concerns precede their consumers?** This is the single most common Genesis failure mode. Scan the plan for concerns that touch *every* feature once they exist:
+    - **Authorization scope** — multi-tenant data isolation, scoped-admin queries (e.g. a manager who only sees their own assigned records). Any feature that reads or writes scoped data must be built *after* the scoping model is in place.
+    - **Currency, tax, and i18n** — every price, every date format, every user-facing string. Features built with single-currency / single-locale assumptions and retrofitted to multi-currency / multi-locale require rewriting every consumer.
+    - **Real-time / concurrency model** — every write that has overlap risk (overlapping bookings, double-submissions, optimistic-update rollback). The locking / serialization strategy must precede the features that write against it.
+    - **Audit logging and observability** — every state change. Adding audit/log calls to existing code is a multi-week retrofit on any non-trivial project.
+    - **Feature flags / kill switches** — if the project uses them, the infrastructure must precede the features that ship behind flags.
+
+    For each cross-cutting concern present in this project, confirm its phase comes *before* any phase that consumes it. If you find one bolted on late, move it earlier even if it means renumbering downstream phases. A cross-cutting concern retrofit is the canonical "we have to rewrite this" scenario this protocol is designed to prevent.
 
 Fix all issues found before moving on. If a fix changes a phase significantly, re-read that phase's neighbours to ensure the fix didn't break their ordering or dependencies.
 
@@ -416,6 +464,8 @@ For every phase, ask:
 4. **Do not items specific?** Are the `Do not:` items specific enough to prevent a real mistake? "Do not add features" is useless. "Do not create user-facing UI in this phase — backend only" is enforceable.
 5. **No playbook citations in phase docs?** Phase docs must not contain "see playbook §X" — the content must be inlined. Check every phase.
 6. **Current implementation status blank?** Every phase's `Current implementation status:` must be empty at Genesis. It is written by the loop, not Genesis.
+7. **Interaction model populated for every UI phase?** Any phase whose `Steps:` create or modify a user-facing surface (a screen, modal, form, table, card grid, calendar widget, drag-and-drop area, etc.) must have a populated `Interaction model:` field. Walk the screen-map domain doc (`06-screen-map.md`) and confirm every surface that lands in a phase has its interaction model captured *in that phase*, not deferred to "we'll figure it out when we build it." A missing interaction model is the single most common cause of mid-loop UX drift.
+8. **`Do not:` items specific enough to catch the cross-cutting concerns from Step 6a?** If the project has multi-tenant scoping, do feature phases include `Do not: write queries that don't scope by <assignment table>`? If multi-currency, `Do not: compute or store any monetary amount without an associated currency code`? Phase-specific `Do not:` items are how the cross-cutting concern stays in force after its dedicated phase ends.
 
 After both passes, if more than three phases required significant changes, do a final quick re-read of the full plan in order to confirm the changes haven't introduced new ordering or dependency issues.
 
@@ -481,7 +531,18 @@ For each rule file you've decided to create:
 - Cite the project domain doc, not the playbook.
 - Use numbers, not vague guidance: "aim < 250 lines; review > 400; split > 600" beats "keep files small."
 - `alwaysApply: true` only for rules whose violation class can appear in any file regardless of path. Everything else uses `globs:` to keep context focused — a bloated always-on rule degrades all other rules around it.
+- **Cap `alwaysApply: true` rules.** Each always-on rule consumes context every iteration. Aim for ≤5 always-on rules total across the project (typical mix: `001-core-project`, `008-styling-design`, `010-assets-cdn`, `011-build-loop`, plus at most one project-specific rule). If you find yourself adding a 6th always-on rule, consider whether the new content belongs in an existing rule, or whether a glob-scoped rule would catch it instead.
 - Update rules when conventions evolve. A stale rule actively misleads.
+
+**Project-type verification checklists.** For each rule file, ask: *"are there project-type-specific verification gotchas the rule should enumerate?"* These are gotchas where the AI's general knowledge is insufficient and only an explicit checklist catches the failure:
+
+- `005-database.mdc` (Postgres / Supabase): when enforcing RLS or schema changes, list every schema object that needs to be checked — *tables, views, materialized views, RPC / `SECURITY DEFINER` functions, triggers, and any custom indexes that affect query plans*. The AI will reliably check tables and miss views — that's a known footgun. Make the checklist explicit.
+- `004-mobile.mdc` (iOS / Android): list entitlements, AASA / assetlinks.json, Info.plist keys, ATS exceptions, Push capabilities — every signed/declared item that ships with the binary.
+- `006-backend.mdc` (any backend): list webhook signature verification, idempotency key generation, retry handling, error handling for *each* third-party service the project integrates with — service-by-service.
+- `008-styling-design.mdc`: list accessibility checks the AI tends to skip (focus rings, color contrast pairs, keyboard navigation, screen reader labels for icon-only buttons, reduced-motion media query).
+- `012-payments.mdc` (if marketplace): list webhook event types the project relies on (`payment_intent.succeeded`, `charge.refunded`, `account.updated`, `payout.paid`) and what each must update.
+
+The principle: the AI is good at general patterns and bad at exhaustive enumeration. Cursor rules that enumerate the failure surface convert blind spots into checklists. **The lesson learned from real builds:** a verification item like "all admin queries are scoped" passes when the AI has scoped every `from('table')` call but missed a Postgres view bypassing RLS. The rule itself needs to list every kind of object that can hold a query.
 
 **`011-build-loop.mdc` template** (write this verbatim into the rules folder):
 
@@ -507,6 +568,8 @@ alwaysApply: true
 - NEVER guess at the contents of any referenced file. Open it. This applies to phase docs, ADRs, the watchlist, the pre-shipping handoff, and the playbook.
 
 - WHEN a task hits something the active phase doc did not anticipate AND the playbook does not cover it, stop and ask the human. Do not invent architecture.
+
+- WHEN the active phase builds user-facing UI and its `Interaction model:` field is empty or silent on the surface you are about to build, stop and ask the human. Do not invent interaction patterns. The Visual Polish Pass cannot fix a wrong interaction model retroactively.
 
 - WHEN you defer work, write a watchlist entry in `docs/build/14-code-quality-watchlist.md` using the Current state / When to clean up / Likely future task template. Do not leave deferred work in chat history or stale comments.
 
@@ -574,6 +637,10 @@ whenever it encounters something it cannot autonomously complete.
 
 (empty)
 
+## Content and Copy Pending Review
+
+(empty — loop adds entries whenever it writes placeholder/draft user-facing copy)
+
 ## Other
 
 (empty)
@@ -585,15 +652,43 @@ Before handing back to the human, run two sub-steps: a final holistic consistenc
 
 **Step 11a — Final cross-artifact consistency check**
 
-Now that all artifacts exist (domain docs, master build plan, cursor rules, ADRs), check that they are mutually consistent:
+Now that all artifacts exist (domain docs, master build plan, cursor rules, ADRs), check that they are mutually consistent. Walk both tables below — do not skip either, and do not summarize.
 
-1. **Plan ↔ domain docs:** Does every domain doc cited in a phase's `Source docs:` actually exist? Does every domain doc that exists get cited by at least one phase?
-2. **Plan ↔ cursor rules:** Do any cursor rules prohibit something the build plan asks the loop to do? Do any cursor rules require something the build plan never sets up?
-3. **Plan ↔ ADRs:** Does the master build plan's stack match `docs/adr/001-stack.md`? Does the repo structure described in phases match `docs/adr/003-repo-topology.md`?
-4. **Cursor rules ↔ domain docs:** Do the cursor rules cite `docs/build/…` paths (not `docs/playbook/…`)? Do those paths actually exist?
-5. **Step 1 answers ↔ everything:** Re-read the Step 1 answers one more time. Is there anything the human said that is not reflected in the artifacts? Any hard constraint that has no corresponding cursor rule or `Do not:` item? Any anti-scope item that could be accidentally built if the loop doesn't have a guard against it?
+**Cross-artifact pair table** — for each row, verify the relationship and fix any drift:
 
-Fix any inconsistencies found before proceeding to the artifact checklist.
+| Pair | Check |
+|---|---|
+| Plan ↔ Domain docs | Every domain doc cited in a phase's `Source docs:` actually exists on disk. Every domain doc that exists is cited by at least one phase (otherwise: why does it exist?). |
+| Plan ↔ Cursor rules | No cursor rule prohibits something the build plan asks the loop to do. No cursor rule requires something the build plan never sets up. |
+| Plan ↔ ADRs | Master build plan's stack matches ADR-001. Repo structure described in phases matches ADR-003. Trust boundaries enumerated in phase `Source docs:` and `Do not:` items match ADR-002. |
+| Cursor rules ↔ Domain docs | Every cursor rule citation of the form `docs/build/0X-…md` points to a file that actually exists. No rule cites `docs/playbook/…` (those are reference only, not loop-loaded). |
+| Domain docs ↔ Domain docs | No two domain docs contain conflicting versions of the same rule. If `05-database-schema-plan.md` says "use Drizzle" and `02-stack-and-build-system-review.md` says "use Prisma" — fix one. |
+| Plan ↔ Archetype lens | If Appendix B archetype lenses were applied in Step 5.0, every concern from each matched archetype's table appears either as a phase, a phase step, a `Do not:` item, a cursor rule, or a handoff entry. |
+
+**Step 1 answers ↔ artifacts table** — re-read the Step 1 answers and confirm each answer landed somewhere:
+
+| Step 1 answer | Where it should be reflected (fill in the actual path) |
+|---|---|
+| Q1 — Product vision | `docs/build/01-product-and-architecture-plan.md` § Vision |
+| Q2 — MVP scope | `docs/build/01-…` § Scope + plan's Phase 0 lock |
+| Q3 — Target platforms | ADR-001 + ADR-003 + plan's phase set |
+| Q4 — Deployment | ADR-001 + plan's CI/CD phase |
+| Q5 — Backend + auth model | ADR-001 + `005-database.mdc` + `006-backend.mdc` + auth phase + (if scoped admin) scoping phase before consumers |
+| Q5 follow-up — Authorization scope graph | `005-database.mdc` enumeration + `05-database-schema-plan.md` schema + scoping phase ordering |
+| Q6 — App monetization timing | `01-…` § Monetization + (if applicable) monetization phase |
+| Q6 follow-up — In-product money flows | (if applicable) `NN-payments-and-marketplace.md` + ADR for Connect topology + dedicated phase |
+| Q7 — Scale tier | §21A checkpoint phase selection |
+| Q8 — AI features | (if applicable) `12-ai-and-ingestion-strategy.md` + AI evals phase |
+| Q9 — Hard constraints | `001-core-project.mdc` prohibitions + relevant phase `Do not:` items |
+| Q9 follow-up — i18n / multi-currency / a11y / data residency / audit logging | (each, if applicable) cross-cutting concern with dedicated phase ordering — verified by Step 6a item 7 |
+| Q10 — Team profile | Cursor rule tightness + ADR formality |
+| Q11 — Existing inputs & third-party integrations | Each integration → domain doc entry + dedicated phase + handoff entry for API keys |
+| Q12 — Screen and feature inventory | `06-screen-map.md` + every screen owned by a phase + `Interaction model:` populated |
+| Q13 — Design system & styling | `07-design-system.md` + `008-styling-design.mdc` + Phase 1 design system foundation |
+| Q14 — Anti-scope | `001-core-project.mdc` "Do not" block + relevant phase `Do not:` items |
+| Q15 — Everything else | Distilled and folded into the appropriate doc above (do not leave as a free-floating note) |
+
+Fix any blank cells before proceeding to the artifact checklist.
 
 **Step 11b — Artifact checklist**
 
@@ -691,6 +786,12 @@ When you're ready to start building, queue this prompt in Cursor on repeat:
   │                                                                             │
   │ Any left-over optimizations → docs/build/14-code-quality-watchlist.md      │
   │ Any agent-blocked items → docs/build/15-pre-shipping-handoff.md            │
+  │ Any user-facing copy you wrote → 15-…'s Content and Copy Pending Review    │
+  │                                                                             │
+  │ If you hit an architectural decision (money, dates/concurrency, auth scope, │
+  │ external service topology) the phase doc AND the playbook section are       │
+  │ silent on — STOP and ask me with the options you considered. Do not invent. │
+  │ If a UI interaction model is missing in the phase doc — STOP and ask.       │
   │                                                                             │
   │ Create a local git commit after every big completed step.                   │
   │ If the active phase is finished, stop and don't do anything.                │
@@ -732,6 +833,18 @@ One sentence stating what this phase makes true.
 2. Step description.
    <!-- provenance: project requirements — short reason -->
 3. Step description.
+
+**Interaction model:** *(required for any phase that builds user-facing UI; omit for purely backend / infra phases)*
+
+For each interactive surface this phase creates, capture:
+
+- **Surface:** route or component name (e.g. `/admin/properties/[id]/calendar`, `<BookingFlowStepTwo />`)
+- **Primary actions:** what the user does on this surface, in priority order
+- **System response:** what happens on each action, including timing and visual feedback (e.g. "optimistic update, server confirms within 200ms, rollback toast on failure")
+- **States:** empty, loading, error, unauthorized, rate-limited, success — every state that can render
+- **Decisions the spec did not cover:** if Figma or the screen map was silent on an interaction (e.g. "drag-to-multi-select on calendar grid — Figma showed static only"), state the chosen approach here so the human can review it at phase boundary
+
+**If this field is empty at loop time for a UI phase, the loop must stop and ask the human before building.** UX decisions made silently mid-loop are not fixable in the Visual Polish Pass — that phase fixes visual details, not interaction models.
 
 **Current implementation status:**
 
@@ -832,7 +945,9 @@ Before committing a batch, walk this list:
 - Tests added for high-priority AI failure modes? (Auth rejection, schema rejection, edge cases from extraction?)
 - Watchlist updated for any deferred work?
 - Provenance markers added for any playbook content inlined this turn?
+- **User-facing copy logged to handoff?** (Any new email body, legal page text, empty-state microcopy, marketing copy, push notification body, or onboarding text written this batch must be logged in `15-pre-shipping-handoff.md` under "Content and Copy Pending Review." Single-word button labels and table headers are exempt. Anything longer needs human review before launch — do not assume the loop's draft is final.)
 - **Architectural decision made mid-batch?** (If you chose between two approaches for anything non-trivial — caching strategy, integration method, queue topology, data model trade-off — write `docs/adr/NNN-<slug>.md` recording the decision, options considered, and why. Decisions that live only in `Current implementation status` are invisible to future sessions.)
+- **Forced "options considered" check on high-risk code paths.** For any code this batch touches that involves money (prices, payouts, refunds, taxes, idempotency keys), dates / availability / locking / concurrency, authentication or authorization scope, external service calls (webhooks, retries, error handling), or migrations / destructive DB operations — explicitly write out the alternatives you considered, even if you only saw one approach. The act of writing alternatives often surfaces a better one. Failing this step on a money-or-dates code path is the most common source of "we have to rewrite this" mid-build. If only one approach truly exists, document why the obvious alternatives don't apply — that note is itself the architectural record.
 
 If any item fails, fix before commit. If you can't fix (e.g. the right fix is out of scope), add a watchlist entry.
 
@@ -939,6 +1054,23 @@ Rules for the watchlist:
 - Terms of service final reviewed copy
 - Support channel decision (email / form / Discord / etc.)
 
+## Content and Copy Pending Review
+
+Items where the loop wrote placeholder/draft text that needs human authorship or sign-off before launch. Every entry must identify the surface, the current draft state, and who owns final copy.
+
+| Surface | Current draft state | Owner | Notes |
+|---|---|---|---|
+| Transactional email: booking confirmation | Loop-drafted placeholder in `packages/email/templates/booking-confirmation.tsx` | Client | Tone, legal footer, brand voice all need review |
+| Transactional email: balance reminder | Placeholder | Client | Include payment link and cancellation policy reference |
+| Empty state microcopy (saved searches, no results, error states) | Generic placeholders | Client / brand owner | Should match overall product voice |
+| Legal pages | Privacy / Terms / Cookie policy — placeholders or generated boilerplate | Legal | Must be reviewed by counsel before launch |
+| Marketing pages (homepage hero, value props, CTAs) | Loop-drafted placeholder | Client | Drives conversion — almost always rewritten |
+| Push notification copy | Placeholders | Client | Character limits apply per platform |
+| Onboarding flows (welcome screens, tooltips) | Placeholders | Client / UX | Often the highest-leverage copy in the product |
+| App store listing | Loop cannot draft; requires human | Client / marketing | Title, subtitle, description, keywords |
+
+**Rule for the loop:** whenever you write user-facing copy beyond a single button label, log a row in this table. Do not delete or "polish" copy drafts — they are placeholders by definition until the human marks them reviewed. Confident-sounding placeholder copy is one of the most common AI-build failure modes; the explicit register prevents it.
+
 ## Production Credentials
 
 - Sentry DSN
@@ -1012,9 +1144,13 @@ Then continue building it out in full detail, adhering to all coding practices, 
 
 Make sure all relevant new tests pass. Do not stop for missing API keys; implement env-based wiring and no-op / dev-safe fallbacks where appropriate.
 
-Any left-over optimizations for later should be noted in docs/build/14-code-quality-watchlist.md using the Current state / When to clean up / Likely future task template. Any agent-blocked items should be logged in docs/build/15-pre-shipping-handoff.md.
+Any left-over optimizations for later should be noted in docs/build/14-code-quality-watchlist.md using the Current state / When to clean up / Likely future task template. Any agent-blocked items should be logged in docs/build/15-pre-shipping-handoff.md. Any user-facing copy you wrote (email bodies, legal pages, microcopy, marketing pages, push notifications, onboarding text) goes into 15-…'s "Content and Copy Pending Review" section — these are placeholders by definition until the human marks them reviewed.
 
 If you need to consult the playbook for a rule the phase doc didn't cover, open only the specific section. Write the resolution back into the active phase doc with a provenance marker. Never bulk-load the playbook.
+
+If you hit an architectural decision (concurrency model, payment topology, schema trade-off, etc.) that the phase doc AND the relevant playbook section are both silent on — STOP and ask me. Do not pick an approach silently. Write the options you considered to a draft ADR so we can decide together.
+
+If a UI surface's interaction model is not specified in the phase doc, STOP and ask. Do not invent interactions.
 
 Create a local git commit after every big completed step. If the active phase's verification list passes, stop and print a phase-complete summary. Do not auto-advance to the next phase.
 ```
@@ -1032,9 +1168,11 @@ Adhere to all coding practices and existing patterns. After each task, double-ch
 
 Make sure all relevant new tests pass. Do not stop for missing API keys; implement env-based wiring and no-op / dev-safe fallbacks.
 
-Any left-over optimizations should be added or updated in docs/build/14-code-quality-watchlist.md. Any agent-blocked items go into docs/build/15-pre-shipping-handoff.md.
+Any left-over optimizations should be added or updated in docs/build/14-code-quality-watchlist.md. Any agent-blocked items go into docs/build/15-pre-shipping-handoff.md. Any user-facing copy you wrote (emails, legal pages, microcopy, marketing pages) goes into 15-…'s "Content and Copy Pending Review."
 
 If you need to consult the playbook for something the phase doc didn't cover, open only the specific section and write the resolution back with a provenance marker. Never bulk-load the playbook.
+
+If you hit an architectural decision (concurrency, payments, schema, integration topology) the phase doc AND the relevant playbook section are silent on — STOP and ask me with the options you considered. If a UI surface's interaction model is missing, STOP and ask. Do not invent.
 
 Create a local git commit after every big completed step. If the active phase is finished, stop — do not auto-advance.
 ```
@@ -1052,7 +1190,9 @@ Adhere to all coding practices and follow existing patterns. After the task, dou
 
 Make sure all relevant new tests pass. Do not stop for missing API keys; implement env-based wiring and no-op / dev-safe fallbacks.
 
-Any deferred work goes into docs/build/14-code-quality-watchlist.md. Any agent-blocked items go into docs/build/15-pre-shipping-handoff.md.
+Any deferred work goes into docs/build/14-code-quality-watchlist.md. Any agent-blocked items go into docs/build/15-pre-shipping-handoff.md. Any user-facing copy you wrote goes into 15-…'s "Content and Copy Pending Review."
+
+If you hit an architectural decision or missing UI interaction model — STOP and ask. Do not invent.
 
 Create a local git commit when the task is complete. If the phase is finished, stop — do not auto-advance.
 ```
@@ -1095,17 +1235,19 @@ Work through this checklist once. It takes 30–60 minutes but unlocks the entir
 - [ ] Push the initial scaffold commit so CI can run from Phase 0 onwards.
 - [ ] Confirm the testing ladder passes on the clean scaffold: `pnpm typecheck && pnpm lint && pnpm test`.
 
-**Window 2 — after Phase 0 (repo scaffold) completes, before Phase 1**
+**Window 2 — after the database schema phase completes**
 
-Phase 0 is purely local — no external services needed. After Phase 0's verification passes:
+The build plan's database schema phase (typically Phase 3 — its `Source docs:` will cite `05-database-schema-plan.md`) introduces the first artifacts that need remote state. Phases 0–2 are purely local: lock, scaffold, and Day-1 verification. The schema phase is the first point where a real remote DB matters. When that phase's verification passes:
 
-- [ ] Apply the initial DB migration: `supabase db push` (or equivalent). This wires the schema the loop will build against from Phase 1 onwards.
+- [ ] Apply the initial DB migration to a remote dev/staging database: `supabase db push` (or equivalent). The loop will have been writing migration files locally up to this point; this step publishes them to the remote so subsequent phases can verify against a real instance with seed data.
 - [ ] Set production/staging environment variables in your deploy platform (Vercel, Fly.io, etc.) so CI deployments don't fail on missing env.
-- [ ] Verify the deploy pipeline runs: push a dummy commit, confirm CI passes end-to-end.
+- [ ] Verify the deploy pipeline runs end-to-end: push a dummy commit, confirm CI passes (typecheck, lint, unit tests, build).
+
+> **Why this window is *after* the schema phase, not after Phase 0:** Phase 0 is "Pre-Build Lock" — confirmation only, no code. Phase 1 scaffolds the repo locally. Phase 2 verifies Day-1 tooling. None of these need remote state. Pushing schema before it has been authored locally and reviewed by the human creates schema drift the loop has no way to detect. Wait until the schema phase has produced and the human has approved the initial migrations, then push.
 
 **After Window 2: the loop is fully autonomous.**
 
-From Phase 1 onwards, the loop can call external services via MCP, run migrations, deploy previews, and verify against real data. The pre-shipping handoff register (`15-…md`) will accumulate items the loop structurally cannot do (App Store submission, real-device tests, production DNS cutover) — but those are launch-gate items, not build-blockers. The loop logs them and moves on.
+From this point onwards, the loop can call external services via MCP, run migrations, deploy previews, and verify against real data. The pre-shipping handoff register (`15-…md`) will accumulate items the loop structurally cannot do (App Store submission, real-device tests, production DNS cutover) — but those are launch-gate items, not build-blockers. The loop logs them and moves on.
 
 **What to do if a new external service appears mid-build:**
 
