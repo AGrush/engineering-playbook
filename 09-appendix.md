@@ -9,6 +9,11 @@ This is a starting stack that satisfies every rule above. Substitute components 
 | Language | TypeScript strict | `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` |
 | Repo | pnpm + Turborepo | Task graph caching, phantom dep prevention |
 | Web framework | **Next.js 16** App Router | Turbopack default (2-5× faster builds), Cache Components (`"use cache"` stable), React 19.2, React Compiler (opt-in) |
+| CSS | **Tailwind CSS v4** | CSS-native, zero config, `@import "tailwindcss"` — no `tailwind.config.js` needed. Utility-first eliminates specificity wars and dead CSS. Default for all new projects. |
+| Component primitives | **shadcn/ui** (built on Radix UI) | Headless, accessible, composable — you own the source code (copied into `packages/ui/`, not an npm dependency). AI-friendly: consistent file structure, predictable patterns. Never write raw HTML + Tailwind inline in feature code — always go through `packages/ui/`. Accessibility (WCAG 2.1 AA) is built into Radix primitives. |
+| Animation | **Motion (Framer Motion v12)** | `import { motion } from "motion/react"` — the 2026 name. Use for page transitions, micro-interactions, and gesture-driven UI. Do not use CSS-only keyframes for anything more complex than a simple fade. |
+| Icons | **Lucide React** | Tree-shakeable, consistent stroke-width, maintained. `import { IconName } from "lucide-react"`. One icon library per project — never mix sets. |
+| Fonts | **`next/font`** | Zero layout shift, self-hosted, automatic subset. Always via `next/font/google` or `next/font/local` — never a `<link>` tag or CSS `@import` from Google Fonts in production. |
 | Mobile | Expo + React Native | Managed workflow; Expo SDK handles native APIs |
 | Server state (client) | TanStack Query v5 | For Client Components only; Server Components fetch directly |
 | Client state | Zustand (slices) | One slice per domain; no God store |

@@ -208,9 +208,55 @@ This is the single biggest force-multiplier for a small team. The codebase teach
   005-database.mdc              ← RLS, migrations, RPC discipline
   006-backend.mdc               ← layering, env validation
   007-testing-quality.mdc       ← test pyramid, what to write first
-  008-styling-design.mdc        ← design tokens, no magic colors
+  008-styling-design.mdc        ← canonical UI stack (Tailwind v4, shadcn/ui, Motion, Lucide, next/font), tokens, three-layer styling model
   009-observability-caching.mdc ← log levels, cache layers
   010-assets-cdn.mdc            ← asset taxonomy (three-bucket model), URL construction, CDN rules
+```
+
+### Rule file `008-styling-design.mdc` — what it must contain
+
+Styling violations happen everywhere — components, layouts, feature routes, shared packages — which is why this rule uses `alwaysApply: true`. The canonical UI stack is non-negotiable: any AI that reaches for a different library, a hardcoded hex value, or a Google Fonts `<link>` tag must be stopped before the commit.
+
+```yaml
+---
+description: Canonical UI stack, design tokens, and three-layer styling model (see Appendix and 07-design-system.md)
+globs: ""
+alwaysApply: true
+---
+```
+
+Bullet content for the rule body (copy verbatim into the `.mdc` file, then add project-specific token names and `packages/ui` paths):
+
+```markdown
+## Canonical UI Stack
+
+- CSS framework: **Tailwind CSS v4** only. `@import "tailwindcss"` in the root CSS file. No `tailwind.config.js` or `tailwind.config.ts` (v4 is config-free by default). Never use CSS Modules, styled-components, Emotion, or inline `style={}` for anything Tailwind can express.
+
+- Component primitives: **shadcn/ui** (Radix UI). Components live in `packages/ui/` as owned source code — they are NOT an npm dependency. Import from `packages/ui/` only. Never install `@shadcn/ui` as a package. Never write raw HTML + Tailwind utility strings directly in feature code (`apps/**`) — always go through `packages/ui/` primitives.
+
+- Animation: **Motion (Framer Motion v12)** via `import { motion } from "motion/react"`. Never `import { motion } from "framer-motion"` (old import path). Never use plain CSS `@keyframes` for anything more complex than a simple fade or skeleton shimmer.
+
+- Icons: **Lucide React** only (`import { IconName } from "lucide-react"`). Never mix icon libraries. Never inline SVGs directly in feature components — add them to `packages/ui/icons/` if Lucide doesn't have them.
+
+- Fonts: **`next/font`** only (Google fonts via `next/font/google`, local fonts via `next/font/local`). Never add a `<link rel="stylesheet" href="https://fonts.googleapis.com/...">` tag anywhere. Never use CSS `@import url("https://fonts.googleapis.com/...")`. Font classes are applied at the root layout — not per-component.
+
+## Design Tokens
+
+- NEVER hardcode a color (`#3B82F6`, `rgb(...)`, `hsl(...)`), spacing value (`16px`, `1.5rem`), or border-radius in a component. Always use the CSS custom property from `packages/design-tokens/`.
+- NEVER use Tailwind's arbitrary value syntax (`text-[#3B82F6]`, `mt-[17px]`) for design-system values. Arbitrary values are for genuinely one-off layout math only.
+- Design tokens are the single source for any visual value. A theme change must be a one-file change in `packages/design-tokens/`.
+
+## Three-Layer Styling Model
+
+- **Phase 1 (design system foundation):** tokens, shadcn/ui setup, base layout, fonts — done before any feature work.
+- **Feature phases:** build with real `packages/ui/` primitives using token values. Never leave placeholder/unstyled markup with a comment "style this later."
+- **Visual polish phase (pre-launch):** pixel-perfect pass — micro-interactions, hover/focus/active states, motion, responsive edge cases, dark mode, WCAG contrast. Only this phase does polish work; do not gold-plate features during earlier phases.
+
+## Prohibited Substitutions
+
+- NEVER install MUI, Mantine, Ant Design, Chakra UI, or any other component library alongside shadcn/ui. If a constraint requires a substitute, that is an ADR decision, not a unilateral install.
+- NEVER use `styled-components`, `@emotion/react`, or CSS Modules as the primary styling layer.
+- NEVER import from `framer-motion` (old package) — always `motion/react`.
 ```
 
 ### Rule file `010-assets-cdn.mdc` — what it must contain

@@ -61,16 +61,15 @@ apps/           ← THIN: routing, composition, env vars only. ~20% of code.
 packages/       ← THICK: 80% of the codebase lives here, isolated by domain.
   validation/   - Zod schemas — shared types & runtime guards
   database/     - DB queries, mutations, generated types
-  ui/           - Shared component primitives (e.g. shadcn/ui). Adopt on Day 1. Never write raw HTML/Tailwind strings in feature code.
+  ui/           - shadcn/ui primitives copied here as owned source (not an npm dep). Adopt on Day 1. Feature code imports from here only — never raw HTML + Tailwind utilities in `apps/`.
   ai/           - LLM/embedding/extraction clients
   observability/- Logging, error capture, analytics wrapper
-  design-tokens/- Colors, spacing, typography (one source for web + mobile)
+  design-tokens/- Colors, spacing, typography CSS custom properties (one source for web + mobile). Token values only — no component logic here.
   assets/       - Asset URL construction helpers (see §8A). One function per asset class.
 
 tooling/        ← INFRASTRUCTURE: shared configs extended by everything else.
   typescript/   - Base tsconfig.json (extended by all apps and packages)
   eslint/       - Shared ESLint flat config (extended or imported)
-  tailwind/     - Base Tailwind config (if using Tailwind)
 ```
 
 **"Keep apps thin" is the key discipline.** If a file in `apps/web/` could be moved to `packages/` without changing its logic, it belongs in `packages/`. App directories handle routing and page composition; everything with business logic or shared utility lives in packages. This is what makes features reusable across web, mobile, and worker targets.
@@ -86,7 +85,12 @@ This lets `tsc` check only changed packages — not the entire repo on every run
 - Apps may import from packages; packages **never** import from apps.
 - Packages must not import from each other in a way that creates a cycle. Enforce with `eslint-plugin-import-x/no-cycle` in CI (ESLint 9+ compatible).
 - No catch-all `shared/`, `utils/`, or `common/` packages. Every package has a single responsibility.
-- Configs (TypeScript, ESLint, Tailwind) live in `/tooling` and are extended — never duplicated across packages.
+- Configs (TypeScript, ESLint) live in `/tooling` and are extended — never duplicated across packages.
+- **Tailwind CSS v4:** no `tailwind.config.js` — add `@import "tailwindcss"` in the root CSS file per app. CSS custom property tokens live in `packages/design-tokens/`; Tailwind reads them via `@theme` or CSS variables. No shared Tailwind config file is needed or wanted.
+- **Icons:** `lucide-react` only. One icon library per project. Never mix sets.
+- **Fonts:** `next/font` in the root layout. No `<link>` tags or CSS `@import` from Google Fonts in production.
+- **Animation:** `motion/react` (Motion v12, formerly Framer Motion). Import as `import { motion } from "motion/react"` — not `"framer-motion"`.
+- **AI impact:** `packages/ui/` + `packages/design-tokens/` give the agent a single, bounded styling surface. An AI writing a new component knows exactly where to look and what to import — it can't introduce a parallel styling approach without violating the cursor rule.`
 
 ---
 

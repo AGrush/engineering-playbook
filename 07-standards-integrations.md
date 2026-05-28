@@ -109,7 +109,7 @@ No hardcoded values in application code. Every constant has an owner and a locat
 
 | What | Where | Example |
 |---|---|---|
-| Design tokens (colors, spacing, radii) | `packages/design-tokens/` | `--color-brand-primary` |
+| Design tokens (colors, spacing, radii) | `packages/design-tokens/` | `--color-brand-primary` (see Appendix for canonical UI stack: Tailwind v4 + shadcn/ui + Motion + Lucide + `next/font`) |
 | App-wide typed constants (timeouts, limits, pagination sizes) | `packages/config/constants.ts` | `SESSION_TIMEOUT_MS`, `MAX_UPLOAD_BYTES` |
 | Domain string literals (routes, roles, error codes, event names) | `packages/validation/` (Zod enums or TS unions) | `UserRole`, `Route`, `ApiErrorCode` |
 | Per-feature constants | `constants.ts` adjacent to the feature file | `ITEMS_PER_PAGE = 20` |

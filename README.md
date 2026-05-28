@@ -109,17 +109,21 @@ Before queuing the first loop run, do the external wiring once: create service a
 
 You copy the loop prompt Genesis gave you and paste it into Cursor. The AI reads the master plan, finds Phase 0, opens the domain docs Phase 0 cites, sets up the monorepo, configures TypeScript + ESLint + Vitest + Playwright, wires CI, verifies the whole testing ladder passes. Updates Phase 0's status field with what it just did. Stops. You review the commit, paste the same prompt again for the next iteration.
 
-**Day 1 — Phase 1 (auth)**
+**Day 1 — Phase 1 (repo, tooling, and design system foundation)**
 
-Same loop prompt. The AI reads the master plan, moves to Phase 1, opens the DB schema and auth domain docs. Implements Supabase auth, RLS policies, session handling. Runs the test ladder. Updates Phase 1 status. Anything it can't finish goes to the watchlist with a cleanup trigger. Anything it needs you to provide (e.g. OAuth app credentials) goes to the pre-shipping handoff register. Stops at the phase boundary.
+Same loop prompt. Phase 1 always covers two things together: the full monorepo and tooling setup (TypeScript strict, ESLint, Zod, env validation, test runner), and the complete design system foundation — Tailwind CSS v4, shadcn/ui copied into `packages/ui/`, design tokens wired in `packages/design-tokens/`, fonts via `next/font`, Lucide for icons. Both must land in Phase 1. Every subsequent feature phase builds on the design system — there's no "add styling later."
 
-**Day 2–N — Phases 2 through 12 (features, by phase)**
+**Day 2 — Phase 2 (§21A Checkpoint 1 verification)**
 
-Each iteration: queue loop prompt → AI re-grounds in master plan + active phase → builds the next slice → verifies → commits → updates status → stops. You review at each phase boundary. If a new domain area appears mid-build (a scope addition you didn't anticipate), the AI writes a new domain doc (`16-…md`), adds the relevant phases to the master plan, and continues. The domain docs stay current; the master plan stays the controller.
+The AI walks the Day-1 foundation checklist against the codebase, confirming cursor rules, tooling, and the design system are all in place before feature work begins.
 
-**Near launch — Phase 13+ (cleanup, polish, pre-shipping)**
+**Day 3–N — Feature phases (auth, DB, screens, by phase)**
 
-The watchlist gets worked through as a dedicated cleanup phase. The pre-shipping handoff register tells you exactly what still needs a human: App Store credentials, production environment variables, real-device test sign-off, legal review. Nothing is forgotten — it was logged the moment the AI hit the blocker, not discovered at launch.
+Same loop prompt. Each phase is one coherent capability: auth (Supabase auth, RLS, session handling), then database schema, then vertical feature slices (each screen or flow is its own phase). Every feature is built using `packages/ui/` primitives and design token values from day one — the UI is always usable and evaluable, never a naked skeleton. Anything the AI can't finish goes to the watchlist. Anything it needs you to provide goes to the pre-shipping handoff register.
+
+**Near launch — polish phase + cleanup + pre-shipping**
+
+If the project needs pixel-perfect polish (set during Genesis Q13), a dedicated visual polish phase runs after all features are stable: micro-interactions, hover/focus states, responsive edge cases, WCAG contrast, dark mode. Then the watchlist cleanup phase. Then the pre-shipping handoff register tells you exactly what a human still needs to provide: App Store credentials, production env vars, real-device test sign-off, legal review. Nothing is forgotten — it was logged the moment the AI hit the blocker.
 
 **Launch — and after**
 

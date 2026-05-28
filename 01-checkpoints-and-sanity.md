@@ -15,10 +15,10 @@ Locking these in now is cheap. Retrofitting any of them later costs days to week
 - [ ] Zod schema-as-types in `packages/validation/` (§3)
 - [ ] Env validated at boot in `packages/config/env.ts`; nothing else reads `process.env` (§6, §17)
 - [ ] `packages/assets/urls.ts` + `getAssetUrl(path)` helper with `MEDIA_BASE` env var (§8A)
-- [ ] Component library (e.g. shadcn/ui) initialized in `packages/ui` — no raw HTML + Tailwind strings in feature code (§2)
+- [ ] Canonical UI stack wired: **Tailwind CSS v4** (`@import "tailwindcss"`, no config file), **shadcn/ui** source in `packages/ui/` (owned, not npm dep), **Lucide React** for icons, **`next/font`** in root layout, **Motion** (`motion/react`) available — no raw HTML + Tailwind in feature code, no Google Fonts `<link>` tags (§2, Appendix)
 - [ ] Database seeding script (`pnpm db:seed`) wired up so local development is deterministic (§7)
 - [ ] Auth provider integrated (Supabase Auth / Clerk / Auth.js) — passkeys enabled (§10)
-- [ ] `.cursor/rules/001-core-project.mdc` + `.cursor/rules/010-assets-cdn.mdc` + `CLAUDE.md` minimal (§16)
+- [ ] `.cursor/rules/001-core-project.mdc` + `.cursor/rules/008-styling-design.mdc` + `.cursor/rules/010-assets-cdn.mdc` + `.cursor/rules/011-build-loop.mdc` + `CLAUDE.md` committed (§16)
 - [ ] `.cursorignore` / `.aiexclude` committed — `.env*`, `secrets/`, keys, dumps, build output excluded (§16)
 - [ ] `docs/adr/NNN-trust-boundaries.md` lists the four boundaries (HTTP, DB, AI, third-party) (§1)
 - [ ] Renovate / Dependabot enabled with grouped PRs; `pnpm install --frozen-lockfile` in CI (§16)
@@ -90,6 +90,7 @@ Reactive firefighting becomes proactive only when these are measured and budgete
 6. If I added an architectural decision, is there an ADR for it?
 7. If I added a silent fallback, is there an observability event for it?
 8. If I added or changed an asset: declared bucket in `docs/adr/NNN-asset-taxonomy.md`? URL via `getAssetUrl` / `packages/assets` only? If Bucket 3 on staging/prod: did I run `upload:media` (and `promote:media` if prod-bound) — not only a git commit?
+9. UI stack sanity: any hardcoded hex/spacing (use design tokens)? Any component that's raw HTML + Tailwind instead of `packages/ui/` primitive? Any `import from "framer-motion"` (should be `"motion/react"`)? Any second icon library imported? Any Google Fonts `<link>` tag added? Any unstyled placeholder markup left for "later"?
 9. If I touched `packages/ai/**`: did evals run and pass? Did I change a prompt without versioning it? Did I add a new tool without an auth check on the handler?
 10. If I added a new query on a growable table: is the `EXPLAIN ANALYZE` plan in the PR description? Did I use `SELECT *` (no — name the columns)?
 
@@ -107,6 +108,12 @@ If any of these is "no", the PR isn't ready.
 - ❌ Inline string-literal system prompts in service files. System prompts are versioned artifacts in `packages/ai/prompts/`. (§14A)
 - ❌ Repo without `.cursorignore` / `.aiexclude`. The AI IDE will upload `.env`, secrets, and dumps to the vendor on every prompt. (§16)
 - ❌ Accepting an AI's `pnpm add X` without verifying the package exists, is maintained, and has reasonable download volume. Slop-squat attacks ship malware via hallucinated package names. (§16)
+- ❌ Installing MUI, Mantine, Ant Design, Chakra UI, or any component library alongside shadcn/ui without an ADR documenting a Q9-forced constraint. The canonical stack is non-negotiable by preference. (Appendix, §16)
+- ❌ Using `styled-components`, `@emotion/react`, or CSS Modules as the primary styling layer. Tailwind v4 + design tokens is the standard. (Appendix)
+- ❌ Importing from `framer-motion` — use `motion/react` (Motion v12). Old import path breaks tree-shaking and will be removed. (Appendix)
+- ❌ Mixing icon libraries. One project, one icon set (Lucide React). Adding Heroicons or Font Awesome alongside Lucide creates visual inconsistency and bundle bloat. (Appendix)
+- ❌ Adding a Google Fonts `<link>` tag or CSS `@import` from `fonts.googleapis.com`. Use `next/font` for zero layout shift and self-hosting. (Appendix)
+- ❌ Leaving placeholder/unstyled markup in a committed feature with a comment "style this later." Feature phases use real design system components. The visual polish phase (pre-launch) does polish, not remediation. (§00 §6)
 - ❌ A long AI session (> 5 files touched, > 2 packages) without an externalized spec. For build-loop work, the spec is a phase in `docs/build/13-master-build-plan.md` (see `00-genesis-and-build-cadence.md`). For off-loop work, the spec is a `docs/tasks/T-NNN.md` task brief. Chat history degrades; the externalized spec is the only reliable scope guard. (§16)
 - ❌ `SELECT *` in application code. Select only what you render — explicit columns keep the wire payload small and document the contract. (§7)
 - ❌ A new query on a table likely to grow past 10K rows merged without an `EXPLAIN ANALYZE` plan in the PR description. (§7)
