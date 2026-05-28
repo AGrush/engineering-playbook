@@ -1,5 +1,12 @@
 # General Engineering Playbook
 
+> **To start a new project:** open Cursor in your repo and send `Start Genesis.`
+> **First time?** Clone the playbook into your project first:
+> ```bash
+> git clone https://github.com/[your-org]/engineering-playbook docs/playbook
+> ```
+> Then open the repo in Cursor and send `Start Genesis.` — the AI does everything else.
+
 **Last reviewed: May 2026**
 
 A short, opinionated guide for starting a production-grade, AI-friendly, team-onboardable platform from day one. Every decision below is a default — change only with explicit reasoning recorded in an ADR (see §17).

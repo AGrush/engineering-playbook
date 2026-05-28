@@ -211,6 +211,29 @@ This is the consultation-writeback rule. The phase doc accumulates targeted, rec
 
 When the human invokes the kickoff prompt, run this protocol top-to-bottom. Do not begin step N+1 until step N is complete and recorded.
 
+#### Step 0 — Opening statement (send this before asking any questions)
+
+Before asking anything, send the following message verbatim so the human knows what they're in:
+
+```
+Genesis started.
+
+I'm going to ask you 13 questions about your project. Your answers drive everything — the more detail you give now, the less the build loop has to guess or ask later. There are no wrong answers; "I don't know yet" and "skip / decide later" are valid for anything you're unsure of.
+
+After the questions I'll produce:
+  - A phased master build plan (your project broken into numbered phases)
+  - Project-specific domain docs (DB schema, product plan, design system, AI governance, etc.)
+  - Cursor rules tailored to your stack and constraints
+  - Architecture Decision Records for key choices
+  - Empty watchlist and pre-shipping handoff registers
+
+Nothing gets built until you review and approve all of that. You can edit anything before giving the go-ahead.
+
+Ready when you are — let's start with question 1.
+```
+
+Then begin Step 1 immediately without waiting for a reply.
+
 #### Step 1 — Project Context Capture (interactive)
 
 Ask the human these questions in order. Do not assume answers. Do not proceed until every question has a clear answer or an explicit "skip / decide later."
@@ -586,10 +609,12 @@ Human setup window (do this before queuing the first loop prompt):
 When you're ready to start building, queue this prompt in Cursor on repeat:
 
   ┌─────────────────────────────────────────────────────────────────────────────┐
-  │ Quickly check the current repo state against the active phase doc and       │
-  │ docs/build/13-master-build-plan.md. Verify alignment with cursor rules.    │
-  │ Study what's next and check what we've already done to make sure we are     │
-  │ aligned and not diverging.                                                  │
+  │ Check the current repo state against docs/build/13-master-build-plan.md — │
+  │ this is the primary controller. Study the active phase doc carefully: what  │
+  │ has already been done, what is next — make sure we are aligned and not      │
+  │ diverging in any way. Verify alignment with cursor rules. Check             │
+  │ docs/build/14-code-quality-watchlist.md. Scan                              │
+  │ docs/build/15-pre-shipping-handoff.md for any now-unblocked items.         │
   │                                                                             │
   │ Check docs/build/14-code-quality-watchlist.md and continue the next        │
   │ coherent phase-aligned task or batch of tasks. We want decent progress      │
@@ -916,12 +941,12 @@ These are the prompts the human queues in Cursor (or any agent runner) to drive 
 
 #### 8.1 Large — full active phase, multi-task progress
 
-Use when a phase is sizable and you want batch progress.
+Use when a phase is sizable and you want substantial batch progress.
 
 ```
-First, double-check everything that was done against our code, aligning with project rules and cursor rules and with all our docs in docs/build/. Study what's next in the active phase doc and in docs/build/13-master-build-plan.md, and check docs/build/14-code-quality-watchlist.md to make sure we are aligned on what was done and what is next.
+First, check the current repo state against docs/build/13-master-build-plan.md — this is the primary controller. Align with all project cursor rules and all docs in docs/build/. Study the active phase doc carefully: what has already been done, what is next — make sure we are aligned and not diverging in any way. Check docs/build/14-code-quality-watchlist.md. Quickly scan docs/build/15-pre-shipping-handoff.md to see if any previously-blocked items can now be resolved.
 
-Then continue building it out in full detail, adhering to all coding practices, following existing patterns, double-checking afterwards for any code smells or documentation regression, stale comments, or any other errors you can spot. Check all logic flows and user flows make sense. Check for performance, security, code sprawl, DRY, KISS, YAGNI violations, separation of concerns, consistency in code patterns, parallel code, maintainability, race conditions, divergence — per docs.
+Then continue building it out in full detail, adhering to all coding practices, following existing patterns. After each completed step, double-check for any code smells, documentation regression, stale comments, or any other errors you can spot. Check all logic flows and user flows make sense. Check for performance, security, code sprawl, DRY, KISS, YAGNI violations, separation of concerns, consistency in code patterns, parallel code, maintainability, race conditions, divergence — per docs.
 
 Make sure all relevant new tests pass. Do not stop for missing API keys; implement env-based wiring and no-op / dev-safe fallbacks where appropriate.
 
@@ -929,7 +954,7 @@ Any left-over optimizations for later should be noted in docs/build/14-code-qual
 
 If you need to consult the playbook for a rule the phase doc didn't cover, open only the specific section. Write the resolution back into the active phase doc with a provenance marker. Never bulk-load the playbook.
 
-Create a local git commit after every big completed step. If the active phase's verification list passes, stop and print a phase-complete summary. Do not auto-advance.
+Create a local git commit after every big completed step. If the active phase's verification list passes, stop and print a phase-complete summary. Do not auto-advance to the next phase.
 ```
 
 #### 8.2 Medium — single phase, coherent batch
@@ -937,19 +962,19 @@ Create a local git commit after every big completed step. If the active phase's 
 Use when the active phase is mid-progress and you want one or two coherent slices per run.
 
 ```
-Quickly check the current repo state against the active phase doc and docs/build/13-master-build-plan.md. Verify alignment with cursor rules. Study what's next and check what we've already done to make sure we are aligned and not diverging.
+Check the current repo state against docs/build/13-master-build-plan.md — this is the primary controller. Study the active phase doc carefully: what has already been done, what is next — make sure we are aligned and not diverging in any way. Verify alignment with cursor rules. Check docs/build/14-code-quality-watchlist.md. Scan docs/build/15-pre-shipping-handoff.md to see if any previously-blocked items can now be resolved.
 
-Check docs/build/14-code-quality-watchlist.md and continue the next coherent phase-aligned task or batch of tasks. We want decent progress but not multiple unrelated things at the same time.
+Continue the next coherent phase-aligned task or batch of tasks. We want decent progress but not multiple unrelated things at the same time.
 
-Adhere to all coding practices and existing patterns. After each task, double-check for changed code smells, documentation regression, stale comments, or other errors. Check relevant logic and user flows. Check performance, security, DRY, KISS, YAGNI, separation of concerns, consistency, parallel code, maintainability, race conditions, divergence — per docs.
+Adhere to all coding practices and existing patterns. After each task, double-check for code smells, documentation regression, stale comments, or other errors. Check relevant logic and user flows. Check performance, security, DRY, KISS, YAGNI, separation of concerns, consistency in code patterns, parallel code, maintainability, race conditions, divergence — per docs.
 
 Make sure all relevant new tests pass. Do not stop for missing API keys; implement env-based wiring and no-op / dev-safe fallbacks.
 
 Any left-over optimizations should be added or updated in docs/build/14-code-quality-watchlist.md. Any agent-blocked items go into docs/build/15-pre-shipping-handoff.md.
 
-If you need to consult the playbook for something the phase doc didn't cover, open only the specific section and write the resolution back with a provenance marker.
+If you need to consult the playbook for something the phase doc didn't cover, open only the specific section and write the resolution back with a provenance marker. Never bulk-load the playbook.
 
-Create a local git commit after every big completed step. If the active phase is finished, stop and don't do anything.
+Create a local git commit after every big completed step. If the active phase is finished, stop — do not auto-advance.
 ```
 
 #### 8.3 Small — single phase, single coherent task
@@ -957,27 +982,29 @@ Create a local git commit after every big completed step. If the active phase is
 Use when the phase is nearly done and you want one careful, conservative pass.
 
 ```
-Study what's next in the active phase doc and check what we've already done to make sure we are aligned and not diverging. Check docs/build/14-code-quality-watchlist.md.
+Check the current repo state against docs/build/13-master-build-plan.md. Study the active phase doc: what has already been done, what is the single next task — make sure we are aligned and not diverging in any way. Check docs/build/14-code-quality-watchlist.md.
 
-Continue the next coherent phase-aligned task. One task — not a batch.
+Continue the next coherent phase-aligned task. One task only — not a batch.
 
-Adhere to all coding practices, follow existing patterns, double-check for code smells, doc regression, stale comments. Check relevant logic and user flows. Check performance, security, DRY, KISS, YAGNI, separation of concerns, consistency, parallel code, maintainability, race conditions, divergence.
+Adhere to all coding practices and follow existing patterns. After the task, double-check for code smells, documentation regression, stale comments, or other errors. Check relevant logic and user flows. Check performance, security, DRY, KISS, YAGNI, separation of concerns, consistency in code patterns, parallel code, maintainability, race conditions, divergence — per docs.
 
-Make sure all relevant new tests pass.
+Make sure all relevant new tests pass. Do not stop for missing API keys; implement env-based wiring and no-op / dev-safe fallbacks.
 
 Any deferred work goes into docs/build/14-code-quality-watchlist.md. Any agent-blocked items go into docs/build/15-pre-shipping-handoff.md.
 
-Create a local git commit after the task is complete. If the phase is finished, stop.
+Create a local git commit when the task is complete. If the phase is finished, stop — do not auto-advance.
 ```
 
-#### 8.4 Smallest — doc and rules consistency sweep
+#### 8.4 Smallest — doc, rules, and alignment sweep
 
-Use when no code work is in scope, only alignment.
+Use at a phase boundary when code is stable and you want to confirm everything is consistent before moving on.
 
 ```
-Check all our recent changes against all our docs and make sure they are up to date. Check our cursor rules — do we need to add or update any rules to prevent recurring drift? Check the rules against all our docs and make sure they are consistent.
+Check all recent changes against all docs in docs/build/ — make sure every doc reflects the current state of the code accurately. Check the active phase doc's Current implementation status: is it complete and accurate for everything done this phase?
 
-No code changes unless they're required to make the docs accurate. Make a local git commit if anything was updated. Stop when done.
+Then check the cursor rules: do any need updating to prevent patterns of drift you observed during this phase? Are there recurring issues that should become permanent rules? Check all rules against all domain docs to make sure they are mutually consistent.
+
+No code changes unless they are required to make the docs accurate. Make a local git commit if anything was updated. Stop when done.
 ```
 
 #### 8.5 Choosing the right variant
