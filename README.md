@@ -1,19 +1,26 @@
 # General Engineering Playbook
 
-> **To start a new project:** Clone the playbook into your project first:
-> ```bash
-> git clone https://github.com/[your-org]/engineering-playbook docs/playbook
-> ```
-> Then open the repo in Cursor and send `Start Genesis` — the AI does everything else.
+**An opinionated engineering playbook with an autonomous AI build system built in.**
+
+The playbook (`01–09`) is a battle-tested reference covering everything a production-grade app needs: architecture, data, auth, security, testing, CI/CD, observability, AI governance, and documentation standards — each rule explained with *why it matters in 2026* and *how it makes AI-assisted development safer*.
+
+The build system (`00-genesis-and-build-cadence.md`) sits on top of the playbook and turns it into action. Tell the AI what you're building, and it converts the playbook into a project-specific phased build plan, writes your cursor rules, scaffolds your repo, and then drives the build autonomously — phase by phase, with verification gates, structured deferrals, and a clean stop at every phase boundary for you to review.
 
 **Last reviewed: May 2026**
 
-A short, opinionated guide for starting a production-grade, AI-friendly, team-onboardable platform from day one. Every decision below is a default — change only with explicit reasoning recorded in an ADR (see §17).
+---
 
-Three questions this repository is designed to answer:
-1. **Why is each system the current best practice?** Each section includes a "Why now" note explaining what changed, what the older approach was, and why this is the right choice in 2026 rather than just an opinion.
-2. **How does this enable AI-assisted development?** Each section includes an "AI impact" note explaining how the decision directly makes an AI agent (Cursor, Copilot, Claude) faster, safer, and less likely to break your codebase.
-3. **How does an AI actually build with this playbook?** [`00-genesis-and-build-cadence.md`](00-genesis-and-build-cadence.md) defines the operating layer on top of §1–§24: a one-time Genesis intake that converts this playbook into a project-specific build plan, and an autonomous build loop the agent runs after. The playbook is the reference manual; `00-` is the protocol for applying it.
+### Quick start
+
+```bash
+# 1. Clone the playbook into your project
+git clone https://github.com/[your-org]/engineering-playbook docs/playbook
+
+# 2. Open your project in Cursor and send:
+Start Genesis.
+```
+
+The AI asks you 13 questions about your project, produces the full build plan and all project artifacts, waits for your approval, then is ready to build. Nothing gets implemented until you say go.
 
 ---
 
