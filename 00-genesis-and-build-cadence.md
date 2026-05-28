@@ -377,6 +377,38 @@ Each phase doc field must be populated such that the loop, reading only that pha
 
 If you find yourself wanting to write "see playbook §X" instead of inlining the content, **inline it instead.** The exception: if the same content appears in many phases (e.g. file-size limits, anti-patterns), put it in cursor rules and reference the rule, not the playbook.
 
+#### Step 6a — Build Plan Review Pass 1: Dependency and Ordering Audit
+
+Do not proceed to Step 7 until this pass is complete and all issues are fixed.
+
+Re-read the entire master build plan as if you are the loop, starting cold at Phase 0. For every phase, ask:
+
+1. **Dependency satisfied?** Does every tool, package, schema, auth model, env var, API contract, or design token this phase references actually exist by the time this phase runs? If Phase 7 uses a DB table that Phase 3 was supposed to create — does Phase 3's `Steps:` actually create it?
+2. **Phase ordering correct?** Could any two adjacent phases be swapped without breaking anything? If yes, re-order so dependencies always precede dependents.
+3. **Scope leak?** Does any phase do work that belongs to another phase? Each phase should be one coherent capability, not a grab-bag.
+4. **Gap detection — Step 1 coverage?** Go back to the Step 1 answers. Is every product requirement, hard constraint, anti-scope item, and input (Figma, brand, API contract, prior code) reflected somewhere in the phases? List any orphaned requirements and add phases or steps to cover them.
+5. **Gap detection — playbook coverage?** Every significant playbook rule that applies to this project should appear either as a phase step, a verification item, or a cursor rule. Scan the domain docs produced in Step 5. Is every rule they contain accounted for in the plan?
+6. **§21A Checkpoint alignment?** The checkpoints in `01-checkpoints-and-sanity.md` are milestone gates. Confirm each applicable checkpoint is embedded as a dedicated verification phase, not buried inside a feature phase.
+
+Fix all issues found before moving on. If a fix changes a phase significantly, re-read that phase's neighbours to ensure the fix didn't break their ordering or dependencies.
+
+#### Step 6b — Build Plan Review Pass 2: Self-Sufficiency and Consistency Audit
+
+This pass checks that the plan is internally consistent and that the loop can execute it without external help.
+
+For every phase, ask:
+
+1. **Self-sufficient?** Could a fresh AI agent, reading only this phase doc and the cursor rules, complete the phase without opening the playbook, asking clarifying questions, or improvising architecture? If not, what is missing? Inline it.
+2. **Source docs accurate?** Does the `Source docs:` list for each phase cite the domain docs that phase actually needs — not too many (bloat), not too few (gaps)?
+3. **Verification concrete?** Is every `Verification:` item a specific, runnable check (a test name, a CLI command, a manual step with expected output)? "Verify auth works" is not concrete. "All tests in `auth.test.ts` pass; unauthenticated request to `/api/events` returns 401" is.
+4. **Do not items specific?** Are the `Do not:` items specific enough to prevent a real mistake? "Do not add features" is useless. "Do not create user-facing UI in this phase — backend only" is enforceable.
+5. **No playbook citations in phase docs?** Phase docs must not contain "see playbook §X" — the content must be inlined. Check every phase.
+6. **Current implementation status blank?** Every phase's `Current implementation status:` must be empty at Genesis. It is written by the loop, not Genesis.
+
+After both passes, if more than three phases required significant changes, do a final quick re-read of the full plan in order to confirm the changes haven't introduced new ordering or dependency issues.
+
+Only when both passes produce no issues: proceed to Step 7.
+
 #### Step 7 — Cursor Rule Distillation
 
 Two rules are always produced regardless of project:
@@ -537,7 +569,23 @@ whenever it encounters something it cannot autonomously complete.
 
 #### Step 11 — Genesis Verification
 
-Before handing back to the human, verify every item below. Do not mark Genesis complete until all pass.
+Before handing back to the human, run two sub-steps: a final holistic consistency check, then the artifact checklist. Do not mark Genesis complete until both pass.
+
+**Step 11a — Final cross-artifact consistency check**
+
+Now that all artifacts exist (domain docs, master build plan, cursor rules, ADRs), check that they are mutually consistent:
+
+1. **Plan ↔ domain docs:** Does every domain doc cited in a phase's `Source docs:` actually exist? Does every domain doc that exists get cited by at least one phase?
+2. **Plan ↔ cursor rules:** Do any cursor rules prohibit something the build plan asks the loop to do? Do any cursor rules require something the build plan never sets up?
+3. **Plan ↔ ADRs:** Does the master build plan's stack match `docs/adr/001-stack.md`? Does the repo structure described in phases match `docs/adr/003-repo-topology.md`?
+4. **Cursor rules ↔ domain docs:** Do the cursor rules cite `docs/build/…` paths (not `docs/playbook/…`)? Do those paths actually exist?
+5. **Step 1 answers ↔ everything:** Re-read the Step 1 answers one more time. Is there anything the human said that is not reflected in the artifacts? Any hard constraint that has no corresponding cursor rule or `Do not:` item? Any anti-scope item that could be accidentally built if the loop doesn't have a guard against it?
+
+Fix any inconsistencies found before proceeding to the artifact checklist.
+
+**Step 11b — Artifact checklist**
+
+Verify every item below. Do not mark Genesis complete until all pass.
 
 **Domain docs:**
 - [ ] Every domain doc exists on disk as a real file (not a plan or description of a file).
