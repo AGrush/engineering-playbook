@@ -575,6 +575,10 @@ alwaysApply: true
 
 - WHEN you encounter an item only a human can resolve (developer-account values, real-device tests, store listing assets, production URLs), log it in `docs/build/15-pre-shipping-handoff.md`. Do not block the loop on it.
 
+- WHEN you implement a no-op / dev-safe fallback for a missing API key or unavailable service, you must do **both**:
+  1. Log the service key name in `docs/build/15-pre-shipping-handoff.md` (under "Production Credentials" or the relevant category).
+  2. Log the fallback location in `docs/build/14-code-quality-watchlist.md` with: the exact file path and function name containing the no-op, what the no-op returns (`null`, empty string, logged warning, etc.), and the trigger "when `<ENV_VAR_NAME>` is added to `.env`." The watchlist entry ensures the fallback gets replaced — the handoff entry alone only ensures the key gets added. A key in `.env` with an active no-op still returning `null` is a live launch bug.
+
 - COMMIT to local git after every meaningful completed step. The commit message references the phase and task.
 
 - STOP at phase boundaries. When the active phase's verification list passes, do not auto-advance. The human queues the next loop run.
@@ -945,6 +949,7 @@ Before committing a batch, walk this list:
 - Tests added for high-priority AI failure modes? (Auth rejection, schema rejection, edge cases from extraction?)
 - Watchlist updated for any deferred work?
 - Provenance markers added for any playbook content inlined this turn?
+- **No-op fallbacks paired with watchlist entries?** (Every no-op / dev-safe fallback implemented this batch must have a corresponding watchlist entry in `14-code-quality-watchlist.md` with: file path, function name, what it returns, trigger = when the env var is set. Handoff entry alone is not enough — the key can be added without anyone finding the fallback.)
 - **User-facing copy logged to handoff?** (Any new email body, legal page text, empty-state microcopy, marketing copy, push notification body, or onboarding text written this batch must be logged in `15-pre-shipping-handoff.md` under "Content and Copy Pending Review." Single-word button labels and table headers are exempt. Anything longer needs human review before launch — do not assume the loop's draft is final.)
 - **Architectural decision made mid-batch?** (If you chose between two approaches for anything non-trivial — caching strategy, integration method, queue topology, data model trade-off — write `docs/adr/NNN-<slug>.md` recording the decision, options considered, and why. Decisions that live only in `Current implementation status` are invisible to future sessions.)
 - **Forced "options considered" check on high-risk code paths.** For any code this batch touches that involves money (prices, payouts, refunds, taxes, idempotency keys), dates / availability / locking / concurrency, authentication or authorization scope, external service calls (webhooks, retries, error handling), or migrations / destructive DB operations — explicitly write out the alternatives you considered, even if you only saw one approach. The act of writing alternatives often surfaces a better one. Failing this step on a money-or-dates code path is the most common source of "we have to rewrite this" mid-build. If only one approach truly exists, document why the obvious alternatives don't apply — that note is itself the architectural record.
@@ -1252,9 +1257,10 @@ From this point onwards, the loop can call external services via MCP, run migrat
 **What to do if a new external service appears mid-build:**
 
 If the loop hits a service it can't reach (MCP not configured, key missing), it should:
-1. Log the item in `15-pre-shipping-handoff.md` with the key name(s) needed.
+1. Log the item in `15-pre-shipping-handoff.md` with the key name(s) needed and where the real implementation will land.
 2. Implement the no-op / dev-safe fallback so the loop can continue.
-3. Not stop or ask — the human will see the handoff entry at the next phase-boundary review.
+3. Log the fallback location in `14-code-quality-watchlist.md` — exact file, function, what it returns, trigger: "when `<ENV_VAR_NAME>` is set." This step is mandatory alongside step 2; missing it means the no-op survives into production.
+4. Not stop or ask — the human will see both entries at the next phase-boundary review.
 
 When the human sees the entry, they add the service to MCP / `.env`, resolve the handoff item, and the next loop run picks up the real implementation path. One interrupt, one resolution, no mid-loop blocking.
 
@@ -1285,7 +1291,54 @@ Since the playbook is copied as a snapshot at Genesis (not git-submoduled), it d
 
 Re-baseline is human-initiated. Do not run a re-baseline as part of the autonomous loop.
 
-#### 9.3 Repeated drift — the meta-signal
+#### 9.3 Scope expansion — human adds a real feature mid-build
+
+This is distinct from AI drift (§9.1 — the loop going off-plan) and playbook re-baseline (§9.2 — the playbook itself changing). Scope expansion is when the human deliberately extends the product with something not in the original Genesis plan.
+
+**How to add a new feature cleanly:**
+
+1. **Stop the active loop run.** Do not add new phases while the loop is mid-phase — it creates ordering ambiguity.
+
+2. **Assess whether it's a phase or a step:**
+   - If the feature is small and fits within an upcoming phase's scope, add it as a step to that phase's `Steps:` field and update the phase goal. Re-run Step 6b's self-sufficiency check for that phase only.
+   - If the feature is its own vertical slice of work (new screens, new tables, new backend surface), it becomes a new phase.
+
+3. **To add a new phase:**
+   - Draft the phase using the §3 phase doc template. Give it a working goal, initial steps from what you know, the correct `Source docs:` list, and a populated `Interaction model:` (if UI is involved).
+   - Insert it at the correct position in `13-master-build-plan.md` — **before any phase that would depend on it, after any phase whose outputs it depends on.** Re-read the affected neighbours.
+   - Re-run **Step 6a checks 1 (dependency), 2 (ordering), and 7 (cross-cutting concerns)** on the new phase and its neighbours. This is the most likely place a scope-expansion phase introduces an ordering bug.
+   - If the new feature introduces a new domain (new DB tables, new third-party service, new screen set), create or update the relevant domain doc(s) and add them to `docs/build/README.md` index.
+   - If the new feature changes the project's ADR-001 stack (new service not in the original Genesis), write a new ADR for it.
+   - Update `001-core-project.mdc` if the new feature changes the product scope statement or the approved package list.
+
+4. **Tell the loop what changed.** The next loop prompt will re-ground from `13-master-build-plan.md`. If the newly added phase is not the *active* phase (it's coming later), the loop will see it in the plan and sequence it correctly. If it should be the *next* phase, say so in the loop prompt.
+
+5. **If the scope expansion is large** (more than three new phases, new platform, new architecture layer), treat it as a mini-Genesis for the new scope: run Step 1 questions only for the new feature area, produce the domain docs for it, then integrate the phases into the existing plan. Do not run the full Genesis protocol again.
+
+**What scope expansion is not:**
+
+- It is not a re-baseline (the playbook didn't change, the project did).
+- It is not AI drift (the human is intentionally changing the plan, not the loop deviating from it).
+- It is not an emergency fix (those go in off-loop task briefs `docs/tasks/T-NNN-…md`).
+
+The key risk of scope expansion is **ordering contamination** — new phases inserted in the wrong position break the cross-cutting concern ordering established in Step 6a. Always re-run the ordering check after inserting.
+
+#### 9.4 Phase too large — splitting an oversized phase mid-build
+
+Genesis estimates phase size upfront, but phases that seemed like "one coherent capability" sometimes grow into weeks of work. The loop was designed to be queued on repeat — but if the same phase's verification list never passes after many iterations, the phase needs to be split rather than re-queued indefinitely.
+
+**Rule for Genesis (prevention):** During Step 6 phase enumeration, if you estimate a phase will take more than 5 coherent loop sessions to complete, split it into two phases now. A phase is too large when its `Steps:` list has more than ~12 items, or when its scope spans more than two major functional areas (e.g. "DB schema + auth + admin UI + API" — that's four phases, not one).
+
+**Rule for the loop (correction):** If the active phase has been running for more than 6 iterations without passing its verification list — and progress is real, not stalled — stop and split the phase:
+
+1. Identify the natural midpoint: what is already done (in `Current implementation status`) vs. what remains (in `Steps:` not yet reflected in status).
+2. Create two phases from the one: Phase Xa covers what's already done + the remaining steps to a stable intermediate state. Phase Xb covers everything after. Number them `Xa` and `Xb` (or renumber the tail of the plan if sequential numbers are important).
+3. Mark Phase Xa's verification list as the new stop gate. It should be passable with what's already built.
+4. The current iteration completes Phase Xa. The next queue runs Phase Xb.
+
+**What not to do:** Do not split a phase that's stuck due to a bug or a wrong approach. That's stop condition §4.4 item 2 (same fix tried 3 times) — fix the approach, not the phase structure.
+
+#### 9.5 Repeated drift — the meta-signal
 
 If the same kind of drift recurs in multiple phases (e.g. the loop keeps consulting the playbook for §13 observability rules), it means Genesis under-extracted §13. The fix is a focused re-baseline of `11-observability-system.md` plus an updated cursor rule.
 
