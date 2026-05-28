@@ -1,7 +1,6 @@
 # General Engineering Playbook
 
-> **To start a new project:** open Cursor in your repo and send `Start Genesis.`
-> **First time?** Clone the playbook into your project first:
+> **To start a new project:** Clone the playbook into your project first:
 > ```bash
 > git clone https://github.com/[your-org]/engineering-playbook docs/playbook
 > ```
