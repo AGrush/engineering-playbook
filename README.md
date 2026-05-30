@@ -228,9 +228,7 @@ Every `.md` file fits exactly one row in the §17 taxonomy. No `TODO.md`, no `ST
 
 ## Navigation
 
-**Split edition** — same content as [`../general-engineering-playbook.md`](../general-engineering-playbook.md), in smaller files. Section numbers (§1–§24, §8A) and wording in the parts are unchanged.
-
-**Full-file backup for crosscheck:** [`_backup/general-engineering-playbook-full-2026-05-27.md`](_backup/general-engineering-playbook-full-2026-05-27.md)
+Section numbers (§1–§24, §8A) are stable — they're how the playbook cross-references itself and how provenance markers in project docs point back to source rules.
 
 ### How to use this
 
@@ -246,7 +244,7 @@ Every `.md` file fits exactly one row in the §17 taxonomy. No `TODO.md`, no `ST
 ### Recommended reading order
 
 0. [`00-genesis-and-build-cadence.md`](00-genesis-and-build-cadence.md) — **the build-system entry point.** Defines Genesis (one-time human-AI intake that converts this playbook into a project-specific master build plan) and the autonomous build loop the agent runs after. Read this first if you're using an AI agent to build a project with this playbook.
-1. [`01-checkpoints-and-sanity.md`](01-checkpoints-and-sanity.md) — **§21A** milestone checkpoints, **§23** five-minute PR sanity test, **§22** anti-patterns, **§21** onboarding checklist *(action-first reference; text verbatim from monolith)*
+1. [`01-checkpoints-and-sanity.md`](01-checkpoints-and-sanity.md) — **§21A** milestone checkpoints, **§23** five-minute PR sanity test, **§22** anti-patterns, **§21** onboarding checklist
 2. [`02-foundation.md`](02-foundation.md) — §1–§6 philosophy, repo, types, state, boundaries, backend
 3. [`03-data-caching-assets.md`](03-data-caching-assets.md) — §7 database, §8 caching, **§8A** asset taxonomy
 4. [`04-platform-runtime.md`](04-platform-runtime.md) — §9 async, §10 auth, §11 real-time & jobs
@@ -256,32 +254,19 @@ Every `.md` file fits exactly one row in the §17 taxonomy. No `TODO.md`, no `ST
 8. [`08-ai-testing-feedback.md`](08-ai-testing-feedback.md) — §24 AI + testing loop
 9. [`09-appendix.md`](09-appendix.md) — default stack table + closing principle
 
-### File map (original section order)
+### File map
 
-| File | Sections | In monolith? |
-|------|----------|---|
-| `README.md` | Title + intro (before §1) | Yes |
-| `00-genesis-and-build-cadence.md` | Build-system entry point (Genesis Protocol + Build Loop) — operating layer that consumes §1–§24 | **No — additive** |
-| `01-checkpoints-and-sanity.md` | §21A, §23, §22, §21 *(reading order)* | Yes |
-| `02-foundation.md` | §1–§6 | Yes |
-| `03-data-caching-assets.md` | §7, §8, §8A | Yes |
-| `04-platform-runtime.md` | §9–§11 | Yes |
-| `05-security-observability.md` | §12–§13 | Yes |
-| `06-delivery-testing-ai-rules.md` | §14–§16 | Yes |
-| `07-standards-integrations.md` | §17–§20 | Yes |
-| `08-ai-testing-feedback.md` | §24 | Yes |
-| `09-appendix.md` | Appendix + closing principle | Yes |
+| File | Sections |
+|------|----------|
+| `00-genesis-and-build-cadence.md` | Build-system entry point (Genesis Protocol + Build Loop) — operating layer that consumes §1–§24 |
+| `01-checkpoints-and-sanity.md` | §21A, §23, §22, §21 *(action-first reading order)* |
+| `02-foundation.md` | §1–§6 |
+| `03-data-caching-assets.md` | §7, §8, §8A |
+| `04-platform-runtime.md` | §9–§11 |
+| `05-security-observability.md` | §12–§13 |
+| `06-delivery-testing-ai-rules.md` | §14–§16 |
+| `07-standards-integrations.md` | §17–§20 |
+| `08-ai-testing-feedback.md` | §24 |
+| `09-appendix.md` | Appendix A (default stack) + Appendix B (project archetype lenses) |
 
-### Verify split vs monolith
-
-From repo root:
-
-```bash
-python3 shared/engineering-playbook/scripts/verify-split.py
-```
-
-### Monolith vs split
-
-- **Monolith** (`general-engineering-playbook.md`) — single file, original § order, good for search-in-one-file and AI context dumps.
-- **Split** (this folder) — same bytes when reassembled **for files marked "Yes" in the file map above**. `01-checkpoints-and-sanity.md` reorders §21/§21A/§22/§23 only for reading, not for merge-back.
-- **`00-genesis-and-build-cadence.md` is additive** — it has no § number and no monolith counterpart. It's the operating-layer doc on top of the playbook, not a chapter of it. The `verify-split.py` round-trip check should skip this file. If your monolith needs to include it, append it under a new top-level heading (e.g. `## Build System (Genesis & Cadence)`) at the end of the monolith — but treat that as a separate decision from the §1–§24 split.
+`00-genesis-and-build-cadence.md` is the operating layer on top of the playbook — it has no §-number and is not a chapter of the playbook itself. It consumes §1–§24 during Genesis and distils the relevant rules into project-specific artifacts. The §1–§24 files remain available as a reference manual the build loop can consult on demand.
