@@ -64,6 +64,7 @@ Examples: holiday rental booking, freelancer platforms, vehicle rental, peer-to-
 |---|---|---|
 | Stripe Connect topology (destination vs. separate charges + transfers) | Defines who holds funds, who owes refunds, who handles disputes — one-way decision | ADR + `NN-payments-and-marketplace.md` domain doc |
 | Listing inventory + availability model | Date-range overlap prevention, hold/lock during checkout, race-condition windows | Cross-cutting concern — must precede booking flow phase |
+| Public vs operator listing accessors | Catalog/published fetchers wired into staff forms cause incomplete vertical slices | `00-` §3 (consumer matrix on data-touching phases) |
 | Multi-currency display + storage | Most marketplaces span regions — every price needs a currency code | Cross-cutting concern — Phase 1 / Phase 3 |
 | Tax / VAT / GST per jurisdiction | Property/booking marketplaces specifically — country and city tax rates | Domain doc + integrated into pricing functions from day one |
 | Host/provider KYC + payout schedule | Stripe Connect requires identity verification before payouts | Phase in plan + handoff entries for compliance |
@@ -80,6 +81,7 @@ Examples: agency dashboards, property management software, healthcare records, C
 | Tenant model (organizations / workspaces / accounts) | Decides whether `tenant_id` is on every table (recommended) or workspace is implicit by user | ADR + domain doc + cross-cutting in Step 6a |
 | Membership / assignment graph | Users belong to N tenants with R roles; queries always join through membership | `005-database.mdc` rule + domain doc |
 | RLS that handles tenant + role + assignment (3 dimensions) | Naive RLS leaks data across tenants — a critical security failure | Dedicated phase before any feature that displays scoped data |
+| Scoped read paths per audience × surface | Staff/admin UIs often reuse public/catalog accessors — writer-only phases look done | `00-` §3 |
 | Invite flow + role assignment UI | Almost always needed — admins invite teammates with specific permissions | Phase before admin-team features |
 | Billing per tenant (seat-based, usage-based, or platform fee) | Connects to Q6 — but billing-per-tenant has different mechanics than per-user | Domain doc + dedicated phase |
 | Audit log per tenant | Enterprise prospects always ask; SOC2 requires it | Cross-cutting from day one |

@@ -30,7 +30,7 @@ The AI asks you 15 questions about your project, produces the full build plan an
 
 ### The system in one paragraph
 
-The AI runs a one-time **Genesis** intake that converts this playbook into six tiers of project-specific artifacts: cursor rules, an index/router, domain docs, a phased master plan, a parking-lot watchlist, and a pre-shipping handoff register. From then on, an autonomous **Build Loop** reads only the active phase doc plus auto-attached cursor rules, picks one coherent task batch, implements it, verifies against a layered testing ladder (TypeScript → ESLint → Vitest → integration → Playwright), commits, updates a per-phase 20–50 line micro-history block, parks anything deferred, and stops at the next phase boundary. The micro-history is the AI's episodic memory; it's pruned the moment the phase closes. Completed phases never re-enter the active context. The detailed structural layout — tier table, operating modes, failure-mode mitigations, runtime folder tree — is in "Structure and artifacts" below.
+The AI runs a one-time **Genesis** intake that converts this playbook into six tiers of project-specific artifacts: cursor rules, an index/router, domain docs, a phased master plan, a code quality watchlist, and a pre-shipping handoff register. From then on, an autonomous **Build Loop** reads only the active phase doc plus auto-attached cursor rules, picks one coherent task batch, implements it, verifies against a layered testing ladder (TypeScript → ESLint → Vitest → integration → Playwright), commits, updates a per-phase 20–50 line micro-history block, parks anything deferred, and stops at the next phase boundary. The micro-history is the AI's episodic memory; it's pruned the moment the phase closes. Completed phases never re-enter the active context. The detailed structural layout — tier table, operating modes, failure-mode mitigations, runtime folder tree — is in "Structure and artifacts" below.
 
 ### How it compares to mid-2026 AI-build approaches
 
@@ -64,18 +64,20 @@ This system is:
 
 ### The phase doc is itself a memory contract
 
-Every phase in `13-master-build-plan.md` carries the same six fields, in the same order:
+Every phase in `13-master-build-plan.md` carries the same core fields, in the same order (plus two conditional fields when they apply):
 
 ```
 Goal — what this phase accomplishes
 Source docs — the literal "open these files this turn" list for the AI
 Steps — the ordered work to do
+Interaction model — required for UI phases (actions, states, feedback per surface)
+Consumer matrix — when data contracts change (`00-` §3); **deferred** rows → owning phase in master plan + code quality watchlist until that phase runs
 Current implementation status — the 20–50 line micro-history, appended each iteration
-Verification — the deterministic gates that confirm "done"
+Verification — deterministic gates; observable per audience, not DB-only
 Do not — explicit anti-scope for this phase
 ```
 
-That structure isn't a template suggestion — it's the contract the loop reads against on every iteration. Goal / Steps / Source docs / Verification / Do not are immutable for the phase; `Current implementation status` is the only field the loop writes to. When the phase closes, the status field is frozen as record and dropped from active context. Future phases never see it.
+That structure isn't a template suggestion — it's the contract the loop reads against on every iteration. Goal / Steps / Source docs / Verification / Do not are immutable for the phase; `Current implementation status` is the only field the loop routinely writes to. When the phase closes, the status field is frozen as record and dropped from active context. Future phases never see it.
 
 ### The build loop does four jobs simultaneously
 
@@ -84,7 +86,7 @@ Every iteration is the canonical agentic-LLM cycle — **Plan → Execute → Ve
 1. **Re-ground** — read the master plan + active phase doc + auto-attached cursor rules. Compare against repo state. Identify the next coherent task or batch.
 2. **Execute** — implement the chosen slice, no more, no less. The phase doc's `Do not` list and the cursor rules constrain scope.
 3. **Verify** — run the §24 testing ladder. Self-review against the per-batch rubric (`00-` §4.3) — DRY/KISS/YAGNI, single source of truth, file size, perf, security, race conditions, documentation regression, doc sprawl, provenance markers.
-4. **Persist + Prune** — append to the phase doc's `Current implementation status`; add watchlist entries for deferred work; add pre-shipping handoff entries for human-blocked items; commit. At phase close, the status block is frozen and the next phase becomes the active doc.
+4. **Persist + Prune** — append to the phase doc's `Current implementation status`; add **code quality watchlist** entries for deferred work (including consumer-matrix rows marked **deferred** until their owning phase runs); add **pre-shipping handoff** entries for human-blocked items; commit. At phase close, the status block is frozen and the next phase becomes the active doc.
 
 ### Why this is up-to-date for mid-2026 specifically
 
@@ -113,13 +115,13 @@ Three platform shifts in 2026 make this approach work where naive alternatives d
 
 You open Cursor in your repo and send two words: **"Start Genesis."** If the playbook is already in `docs/playbook/`, the cursor rule picks it up and the AI opens `00-genesis-and-build-cadence.md` automatically. If starting from scratch, you pass the raw GitHub URL once — after that it's always just "Start Genesis." The AI asks you 15 questions — what the product does, target platform, stack preferences, monetization, scale expectations, hard constraints, a full screen and feature inventory (every page and its key interactions), your design system approach (component library, brand tokens, fidelity expectation), anything you've seen go wrong before, and a final open-ended catch-all for anything else (Notion docs, Figma links, competitor references, prior failed attempts, industry context). You answer. It locks the stack, writes three ADRs (stack choices, trust boundaries, repo topology), scaffolds the folder structure, writes 8–12 project-specific domain docs (product plan, DB schema, route map, design system, AI governance, etc.), generates the master build plan with every phase listed out (Phase 0 through however many you need), reviews the plan twice for dependency ordering and self-sufficiency, creates the empty watchlist and handoff register, and writes your cursor rules — all distilled from your answers and this playbook. You review the artifacts and approve. **Genesis then prints the exact loop prompt to copy-paste into Cursor, with a checklist of the human setup steps to do first.** You don't need to find or write the prompt — it's handed to you ready to go.
 
-**Day 0 still — human setup window (~30–60 min, before Phase 0)**
+**Day 0 still — human setup Window 1 (~30–60 min, before Phase 0)**
 
-Before queuing the first loop run, do the external wiring once: create service accounts (Supabase, Stripe, etc.), generate API keys and add them to `.env.local`, run `supabase init` / `supabase link`, configure MCP servers in `.cursor/mcp.json`, push the scaffold commit, confirm the testing ladder passes clean. This is the only time you need to interrupt the loop for external setup — the loop will log any mid-build blockers to the pre-shipping handoff register and keep moving. See `00-` §8.6 for the full checklist.
+Before queuing the first loop run, complete **Window 1** in `00-` §8.6: create service accounts (Supabase, Stripe, etc.), generate API keys and add them to `.env.local`, run `supabase init` / `supabase link` (local CLI), configure MCP servers in `.cursor/mcp.json`, push the scaffold commit, confirm the testing ladder passes clean. **Window 2** (remote DB push, deploy env vars, end-to-end CI) runs after the database schema phase completes — not on Day 0. Mid-build service gaps go to the pre-shipping handoff and watchlist; the loop keeps moving with no-op fallbacks until you resolve them at a phase boundary.
 
 **Day 0 still — Phase 0 (Pre-Build Lock)**
 
-You copy the loop prompt Genesis gave you and paste it into Cursor. Phase 0 is the confirmation step — no code yet. The AI re-reads the master plan, confirms every domain doc exists and is reviewed, confirms the MVP boundaries match your intent, confirms the human setup window is complete. If anything is off, it stops and surfaces it before any code lands. This is the last cheap moment to fix Genesis output.
+You copy the loop prompt Genesis gave you and paste it into Cursor. Phase 0 is the confirmation step — no code yet. The AI re-reads the master plan, confirms every domain doc exists and is reviewed, confirms the MVP boundaries match your intent, confirms **Window 1** of the human setup checklist is complete. If anything is off, it stops and surfaces it before any code lands. This is the last cheap moment to fix Genesis output.
 
 **Day 1 — Phase 1 (repo, tooling, and design system foundation)**
 
@@ -129,9 +131,13 @@ Same loop prompt. Phase 1 is where actual code starts. It always covers two thin
 
 The AI walks the Day-1 foundation checklist against the codebase, confirming cursor rules, tooling, and the design system are all in place before feature work begins.
 
-**Day 3–N — Feature phases (auth, DB, screens, by phase)**
+**After the database schema phase — human setup Window 2**
 
-Same loop prompt. Each phase is one coherent capability: auth (Supabase auth, RLS, session handling), then database schema, then vertical feature slices (each screen or flow is its own phase). Every feature is built using `packages/ui/` primitives and design token values from day one — the UI is always usable and evaluable, never a naked skeleton. Anything the AI can't finish goes to the watchlist. Anything it needs you to provide goes to the pre-shipping handoff register.
+When that phase's verification passes, run **Window 2** in `00-` §8.6: push initial migrations to remote dev/staging, set deploy-platform env vars, confirm CI runs end-to-end. From here the loop can verify against real remote state.
+
+**Day 3–N — Feature phases (foundation, then journeys, by phase)**
+
+Same loop prompt. Early phases are **foundation** capabilities (auth, RLS, session handling; database schema and migrations) — cross-cutting infrastructure that many journeys depend on. After that, phases are **journey / capability** slices (each screen or flow outcome is its own phase), not subsystem stripes ("all admin"). When a phase introduces or changes shared data (a new FK, column, or lifecycle status), its phase doc includes a **consumer matrix** (`00-` §3) and verification of what each actor **sees**, not only what a row contains; readers out of scope this phase are matrix **deferred (Phase N)** with that phase in `13-master-build-plan.md` and a matching **code quality watchlist** entry until Phase N runs (`00-` §5). Every feature is built using `packages/ui/` primitives and design token values from day one — the UI is always usable and evaluable, never a naked skeleton. Human-only blockers (credentials, legal, real-device sign-off): `15-pre-shipping-handoff.md`. PRs: `01-` §23 item 12 and §22.
 
 **Near launch — polish phase + cleanup + pre-shipping**
 
@@ -166,7 +172,7 @@ When an AI runs Genesis for a new project, it produces six tiers of artifacts. E
 | **1** | `docs/build/README.md` | Index / table-of-contents router — tells the AI which doc to load when |
 | **2** | `docs/build/01-…md` through `12-…md` | Domain docs (product, DB plan, design system, caching, AI governance, etc.) — extracted from the playbook and adapted to *this project*, never generic |
 | **3** | `docs/build/13-master-build-plan.md` | Phased execution sequence — the only doc with a build order |
-| **4** | `docs/build/14-code-quality-watchlist.md` | Parking-lot register for deferred work with explicit cleanup triggers |
+| **4** | `docs/build/14-code-quality-watchlist.md` | Code quality watchlist — deferred cleanup and consumer-matrix **deferred** rows until their owning master-plan phase runs |
 | **5** | `docs/build/15-pre-shipping-handoff.md` | Items only a human can resolve (developer-account values, real-device tests, signed builds, store listings) |
 
 This is a **Document-Graph Router with episodic memory pruning**. Each phase doc carries a `Current implementation status` field — a 20–50 line micro-history of what just happened — keyed to that phase and never re-read once the phase closes. Tokens stay bounded; context stays grounded; completed phases don't pollute future iterations.
@@ -176,7 +182,7 @@ This is a **Document-Graph Router with episodic memory pruning**. Each phase doc
 | Mode | Trigger | What the AI does |
 |---|---|---|
 | **Genesis** *(one-time per project)* | Human sends "Start Genesis." | Interactive intake (15 questions) → stack lock with ADRs → repo topology decision → folder scaffold → write all six tiers of artifacts (project-specific, not template) → human approval gate → ready for loop |
-| **Build Loop** *(N times per phase)* | Human queues a loop prompt | Re-ground in master plan + active phase doc → pick the next coherent task or batch → implement → run the verification ladder (TypeScript → ESLint → Vitest → integration → Playwright) → self-review against the per-batch rubric → commit → update the phase doc's `Current implementation status` → append to watchlist if anything was deferred → stop at phase boundary |
+| **Build Loop** *(N times per phase)* | Human queues a loop prompt | Re-ground in master plan + active phase doc → pick the next coherent task or batch → implement → run the verification ladder (TypeScript → ESLint → Vitest → integration → Playwright) → self-review against the per-batch rubric → commit → update the phase doc's `Current implementation status` → append to **code quality watchlist** when work is deferred (incl. matrix **deferred** rows until owning phase runs) → stop at phase boundary |
 
 Genesis is interactive; the build loop is autonomous between phase boundaries. The phase boundary is the natural human review gate.
 
@@ -238,7 +244,7 @@ Section numbers (§1–§24, §8A) are stable — they're how the playbook cross
 | **Starting a new project manually** | [`01-checkpoints-and-sanity.md`](01-checkpoints-and-sanity.md) first (milestones → PR sanity → anti-patterns → onboarding) |
 | **Choosing stack** | [`09-appendix.md`](09-appendix.md) + write ADR |
 | **Building features** | Parts `02` → `08` in order below |
-| **Every PR** | §23 in [`01-checkpoints-and-sanity.md`](01-checkpoints-and-sanity.md) |
+| **Every PR** | §23 + §22 in [`01-checkpoints-and-sanity.md`](01-checkpoints-and-sanity.md) (§23 item 12 — shared data / deferred matrix rows) |
 | **Lookup one topic** | Use the file map below |
 
 ### Recommended reading order

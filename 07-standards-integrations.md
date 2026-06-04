@@ -65,6 +65,7 @@ Write ADRs *when* the decision is made, not after. Six months later you will not
 | "How to build feature X" | New phase in `13-master-build-plan.md` |
 | "Why we chose Y over Z" | New ADR |
 | "Defer this cleanup until trigger fires" | New watchlist entry |
+| "Consumer-matrix reader out of scope this phase (horizontal slice deferred)" | Owning phase in `13-master-build-plan.md` + matrix Status `deferred (Phase N)`; matching watchlist entry in `14-code-quality-watchlist.md` until that phase ships |
 | "Apple / Google / legal needs to provide value Z" | Pre-shipping handoff entry |
 | "How the database schema works" | Domain doc (e.g. `05-database-schema-plan.md`) |
 | "A new domain area not anticipated at Genesis" | New numbered domain doc (`16-…md`, `17-…md`, …) plus drift protocol writeback |

@@ -81,7 +81,7 @@ Queue one of the loop prompts from §8 in Cursor on repeat. The right variant de
 2. Open the repo in Cursor.
 3. Send `Start Genesis.` — answer all 15 intake questions thoroughly.
 4. Review the produced artifacts. Edit anything that doesn't match your intent.
-5. Do the human setup window (§8.6) — external service accounts, API keys, MCP config, `.env`.
+5. Do **Window 1** of the human setup window (§8.6) — external service accounts, API keys, MCP config, `.env`. **Window 2** runs after the database schema phase.
 6. Send the Phase 0 loop prompt from §8. Review and repeat per phase.
 7. At each phase boundary, review the commit, check the watchlist, approve before re-queuing.
 8. Near launch, work through the pre-shipping handoff register (`15-…md`).
@@ -417,7 +417,7 @@ Note: by the time the loop reaches Phase 0, cursor rules, ADRs, domain docs, the
   1. *Tooling:* monorepo, TS strict, ESLint, Zod, env validation, test runner wiring (§21A Checkpoint 1 items).
   2. *Design system:* install and configure the full canonical UI stack from the Appendix: **Tailwind CSS v4** (`@import "tailwindcss"`, no config file), **shadcn/ui** source copied into `packages/ui/` (owned, not an npm dep), **Motion** (`motion/react`), **Lucide React**, **`next/font`** in root layout. Set up `packages/design-tokens/` with brand colors, typography scale, spacing scale from Q13 answers. Wire base layout components (shell, nav, page wrapper). Substitute any item only if ADR-001 documents a Q9-forced constraint. This must be done in Phase 1, not later — all feature phases build on top of it. A design system retrofitted after 15 screens is a multi-week project.
 - **Phase 2** — `(§21A Checkpoint 1)` Day-1 Foundation Verification. Walk the §21A Checkpoint 1 list against the codebase; this is where Genesis's cursor rules and Phase 1's tooling + design system get validated together.
-- **Phase 3 onwards** — Vertical slices of product work. Each phase is one coherent capability (e.g. "Web admin MVP", "Mobile app shell", "Event detail screen", "URL ingestion to draft", etc.). **Styling approach for feature phases:** build each feature using real components from the design system — correct layout, correct token values, correct semantic HTML, usable and evaluable from day one. Do not use placeholder/unstyled markup with the intent to style it later. Do not do pixel-perfect polish mid-feature-build — that comes in the polish phase below.
+- **Phase 3 onwards** — Vertical slices of product work. Each phase is one **journey / capability** outcome, not a subsystem stripe (prefer "Staff can link related record on edit form" or "Customer can complete checkout with catalog selection" over "Web admin MVP" or "All API work"). Subsystem-style phase names are allowed only when the phase doc includes a consumer matrix per entity introduced and verification per audience — otherwise split into journey phases. Examples: "Product detail screen (guest)", "Review queue → staff editor (approve then edit)", "Scoped operator assignments (auth + RLS)", "Mobile app shell (navigation only — no new shared data)." **Styling approach for feature phases:** build each feature using real components from the design system — correct layout, correct token values, correct semantic HTML, usable and evaluable from day one. Do not use placeholder/unstyled markup with the intent to style it later. Do not do pixel-perfect polish mid-feature-build — that comes in the polish phase below.
 - **Phase N — Visual Polish Pass** *(only if design fidelity expectation from Genesis Q13 is "polished product" or "somewhere in between").* Walk every screen: micro-interactions, hover/focus/active states, focus rings (WCAG), responsive edge cases, dark mode if applicable, motion/animation, empty states, loading skeletons. This phase comes after all features are built and verified, so the AI has a stable target. It's fast because the structure is already correct — only visual details remain.
 - **Phase N+1 — `(§21A Checkpoint 2)` Pre-launch Readiness.** Walk Checkpoint 2 against codebase.
 - **Phase N+2 — Code Quality Watchlist Cleanup.** Run through `14-…` and resolve triggered items.
@@ -460,12 +460,13 @@ For every phase, ask:
 
 1. **Self-sufficient?** Could a fresh AI agent, reading only this phase doc and the cursor rules, complete the phase without opening the playbook, asking clarifying questions, or improvising architecture? If not, what is missing? Inline it.
 2. **Source docs accurate?** Does the `Source docs:` list for each phase cite the domain docs that phase actually needs — not too many (bloat), not too few (gaps)?
-3. **Verification concrete?** Is every `Verification:` item a specific, runnable check (a test name, a CLI command, a manual step with expected output)? "Verify auth works" is not concrete. "All tests in `auth.test.ts` pass; unauthenticated request to `/api/events` returns 401" is.
-4. **Do not items specific?** Are the `Do not:` items specific enough to prevent a real mistake? "Do not add features" is useless. "Do not create user-facing UI in this phase — backend only" is enforceable.
+3. **Verification concrete?** Is every `Verification:` item a specific, runnable check (a test name, a CLI command, a manual step with expected output)? "Verify auth works" is not concrete. "All tests in `auth.test.ts` pass; unauthenticated request to `/api/orders` returns 401" is.
+4. **Do not items specific?** Are the `Do not:` items specific enough to prevent a real mistake? "Do not add features" is useless. "Do not create user-facing UI in this phase — backend only" is enforceable **only if** the consumer matrix marks every UI reader row as **deferred** with an owning phase number and matching watchlist entry — otherwise the phase is an incomplete vertical slice pretending to be done.
 5. **No playbook citations in phase docs?** Phase docs must not contain "see playbook §X" — the content must be inlined. Check every phase.
 6. **Current implementation status blank?** Every phase's `Current implementation status:` must be empty at Genesis. It is written by the loop, not Genesis.
 7. **Interaction model populated for every UI phase?** Any phase whose `Steps:` create or modify a user-facing surface (a screen, modal, form, table, card grid, calendar widget, drag-and-drop area, etc.) must have a populated `Interaction model:` field. Walk the screen-map domain doc (`06-screen-map.md`) and confirm every surface that lands in a phase has its interaction model captured *in that phase*, not deferred to "we'll figure it out when we build it." A missing interaction model is the single most common cause of mid-loop UX drift.
 8. **`Do not:` items specific enough to catch the cross-cutting concerns from Step 6a?** If the project has multi-tenant scoping, do feature phases include `Do not: write queries that don't scope by <assignment table>`? If multi-currency, `Do not: compute or store any monetary amount without an associated currency code`? Phase-specific `Do not:` items are how the cross-cutting concern stays in force after its dedicated phase ends.
+9. **Consumer matrix for data-touching phases?** Any phase that introduces or changes a field, FK, entity, or lifecycle status must include a populated **Consumer matrix** (§3 template) with every row's **Status** set (in scope / satisfied / deferred — no blanks). Verification must be **observable per audience** (admin, guest, public, system jobs as applicable). Phases that only wire the write path without admin/guest read paths — and without explicit deferred rows — are incomplete vertical slices.
 
 After both passes, if more than three phases required significant changes, do a final quick re-read of the full plan in order to confirm the changes haven't introduced new ordering or dependency issues.
 
@@ -570,6 +571,8 @@ alwaysApply: true
 - WHEN a task hits something the active phase doc did not anticipate AND the playbook does not cover it, stop and ask the human. Do not invent architecture.
 
 - WHEN the active phase builds user-facing UI and its `Interaction model:` field is empty or silent on the surface you are about to build, stop and ask the human. Do not invent interaction patterns. The Visual Polish Pass cannot fix a wrong interaction model retroactively.
+
+- WHEN this batch changes a data contract (field, FK, entity, status), confirm the phase doc's Consumer matrix lists every audience×surface that reads or selects it. Staff/admin surfaces must use operator-scoped data accessors, not public/catalog fetchers, unless verification explicitly allows it. Prefer observable verification (what the user sees) over DB-only assertions.
 
 - WHEN you defer work, write a watchlist entry in `docs/build/14-code-quality-watchlist.md` using the Current state / When to clean up / Likely future task template. Do not leave deferred work in chat history or stale comments.
 
@@ -705,7 +708,7 @@ Verify every item below. Do not mark Genesis complete until all pass.
 - [ ] Every domain doc has provenance markers on inlined playbook content.
 
 **Master build plan:**
-- [ ] Every phase doc field is populated (Goal / Source docs / Steps / Current implementation status / Verification / Do not).
+- [ ] Every phase doc field is populated (Goal / Source docs / Steps / Interaction model when UI / Consumer matrix when data contracts change (§3) / Current implementation status / Verification / Do not).
 - [ ] Every phase's `Verification:` items are concrete and testable — not "make sure it works."
 - [ ] Every phase's `Steps:` are granular enough that the loop can execute one step per commit without ambiguity.
 - [ ] Every `Do not:` item is either project-specific or a distilled playbook anti-pattern with provenance.
@@ -756,13 +759,14 @@ Before starting the loop, please review:
   3. .cursor/rules/001-core-project.mdc — are the prohibitions and anti-scope right?
   If anything is wrong, tell me now and I'll fix it before the loop starts.
 
-Human setup window (do this before queuing the first loop prompt):
+Human setup — Window 1 (before queuing the first loop prompt):
   □ Create external service accounts (see docs/adr/001-stack.md for the list)
   □ Add API keys / secrets to .env.local
   □ Run: supabase init && supabase link (or equivalent)
   □ Configure MCP servers in .cursor/mcp.json
-  □ Confirm the testing ladder passes clean:
+  □ Push initial scaffold commit; confirm testing ladder passes:
       pnpm typecheck && pnpm lint && pnpm test
+  Window 2 (remote DB push, deploy env, CI e2e) — after the database schema phase:
   Full checklist: docs/playbook/00-genesis-and-build-cadence.md §8.6
 
 When you're ready to start building, queue this prompt in Cursor on repeat:
@@ -850,15 +854,49 @@ For each interactive surface this phase creates, capture:
 
 **If this field is empty at loop time for a UI phase, the loop must stop and ask the human before building.** UX decisions made silently mid-loop are not fixable in the Visual Polish Pass — that phase fixes visual details, not interaction models.
 
+**Consumer matrix:** *(required when this phase adds or changes a field, foreign key, entity, or status that other surfaces read or select — omit for purely infra/tooling phases)*
+
+Each row answers four questions — **who** (audience), **where** (surface), **what subset** (visibility: states, tenant, assignment scope), **which code path** (accessor) — plus **Status** (in scope / satisfied / deferred) for what this phase builds.
+
+**Why this exists:** An **incomplete vertical slice** — producer built (validation → persistence), readers on other audiences/surfaces skipped or wrong. Common when specs are schema/API steps, not per-actor outcomes; AI loops especially if `Steps`/tests stop at the writer without asking *who reads this, which role, which screen?* Usual gap: admin, guest, or public UIs that already "look done." Writer-only unit tests and non-null FKs do not close the slice — fill the matrix and verify what each audience **sees**. Review-before-publish can catch misses; treat it as a safety net, not the plan.
+
+Trace **producer → storage → every reader** (including jobs and exports). Do not stop at the write path.
+
+Use one row per **audience × surface** that touches this data:
+
+| Audience | Surface | Op (read / write / both) | Visibility (states, tenant, assignment scope) | Data accessor (function / RPC) | Status (in scope / satisfied / deferred) |
+|----------|---------|--------------------------|-----------------------------------------------|--------------------------------|------------------------------------------|
+| Public (anonymous) | … | read | published only | `list…ForPublicCatalog` | in scope / satisfied (Phase N) / deferred (Phase N → watchlist) |
+| Authenticated end user | … | read / write | own + published catalog | … | … |
+| Staff / scoped operator | … | read / write | draft + published within assignment | `list…ForStaffEditor` | … |
+| Platform admin | … | … | … | … | … |
+| System (job, webhook, index) | … | read | … | … | … |
+
+**Status column rules:** **in scope** — build or fix in this phase. **satisfied (Phase N)** — already correct; cite the phase that delivered it. **deferred (Phase N)** — intentionally not this phase; **Phase N must already exist** in `13-master-build-plan.md` as the owning phase, and the same row must have a matching entry in `14-code-quality-watchlist.md` (§5) until Phase N ships that reader. Do not leave Status blank. Do not park product-facing reader work on the watchlist alone with no owning phase in the plan.
+
+**Audience classes (extend in Genesis if the product has more):** anonymous/public, authenticated end user, staff/scoped operator (assignment graph from Q5), platform admin, system/background.
+
+**Phase scope vs the matrix (vertical vs horizontal):** Loop phases stay **one coherent capability** so context stays bounded — that is vertical *execution*. The consumer matrix is not "fix every app in the repo this phase"; it is **inventory for this data-contract change only**. Each row is tagged **in scope for this phase** (build or fix now), **already satisfied** (earlier phase owns it — cite which), or **deferred** (watchlist + owning phase). A phase that only implements the writer must not pretend the slice is done — either pull the reader rows in scope into the same phase, or defer them explicitly. Prefer phases sliced by **user journey / capability** ("customer can checkout with line-item selection," "staff can link parent record on edit form") over **subsystem stripes** ("all admin," "all API") — subsystem phases look vertical but force horizontal repair work later. Ten product areas mean ten capability phases over time, not one matrix that rebuilds all ten per loop.
+
+**Rules:**
+
+- Staff and admin surfaces **must not** call public/catalog accessors unless verification explicitly documents that intent.
+- Accessors are named for **audience + visibility**, not for the entity alone.
+- If a cell is intentionally deferred (write shipped, read later): owning phase in `13-master-build-plan.md`, **deferred** on the matrix row, and a watchlist entry in `14-code-quality-watchlist.md` (not a silent gap). Use `15-pre-shipping-handoff.md` only for items a human must provide (§6) — not for deferred engineering work.
+
 **Current implementation status:**
 
 (Empty at Genesis. The loop appends one bullet per completed slice, written in the form: "<Capability> now <does specific thing> through <specific mechanism>.")
 
 **Verification:**
 
-- Concrete, testable assertion.
-  <!-- provenance: playbook §X -->
+- Concrete, testable assertion — prefer **what a human sees** on each audience this phase serves, not only what a row contains.
+  <!-- provenance: playbook §22 — incomplete vertical slice -->
+- Example (good): "After approval from the review queue, staff edit form shows the related-entity panel; dropdown includes draft records within the operator's assignment scope."
+- Example (weak): "`orders.parent_id` is non-null" (DB-only; does not prove the staff read path).
+- Include at least one check per audience×surface row that applies to this phase (often 2–4, not every cell in the product).
 - Another concrete, testable assertion.
+  <!-- provenance: playbook §X -->
 
 **Do not:**
 
@@ -946,6 +984,7 @@ Before committing a batch, walk this list:
 - **UI stack violations?** (Hardcoded hex/spacing instead of design token? Raw HTML + Tailwind in feature code instead of `packages/ui/` primitive? `import { motion } from "framer-motion"` instead of `"motion/react"`? Second icon library imported? Google Fonts `<link>` tag added? MUI/Mantine/Ant Design installed? Placeholder/unstyled markup left for "later"?)
 - Documentation regression? (Stale comments? Outdated `Current implementation status` from a previous slice?)
 - **Doc sprawl introduced?** (Any new `.md` file created this batch? If yes, it must fit the taxonomy in playbook §17 Documentation Governance. Stray `TODO.md` / `STATUS.md` / `NOTES.md` / `SCRATCHPAD.md` / investigation writeups / `.md` files inside source folders / duplicate READMEs — all forbidden. If the doc need doesn't fit the taxonomy, stop and write an ADR to propose an extension; do not invent a new doc location.)
+- **Consumer trace complete for data changes?** (§3) If this batch added/changed a field, FK, entity, or status: phase consumer matrix lists every audience×surface reader with **Status**; grep confirms readers; **in scope** rows implemented; **deferred** rows on watchlist; staff/admin use operator-scoped accessors, not public/catalog fetchers. Phase `Verification:` is observable per audience (what they **see or can do**), not DB-only — include a boundary test across the slice when applicable.
 - Tests added for high-priority AI failure modes? (Auth rejection, schema rejection, edge cases from extraction?)
 - Watchlist updated for any deferred work?
 - Provenance markers added for any playbook content inlined this turn?
@@ -973,7 +1012,7 @@ In all cases, write a clear stop summary stating which condition triggered and w
 
 ### 5. The Watchlist Entry Template
 
-`docs/build/14-code-quality-watchlist.md` is the parking lot. Every entry follows this template:
+`docs/build/14-code-quality-watchlist.md` is the **code quality watchlist** (deferred cleanup, optimizations, no-op replacements, and consumer-matrix rows marked **deferred** until their owning phase runs). Scheduled product work still lives as a **phase** in `13-master-build-plan.md` first; the watchlist mirrors it so phase-boundary review does not lose it. Every entry follows this template:
 
 ```markdown
 ### <Item Title — concise, search-friendly>
@@ -1002,7 +1041,7 @@ Rules for the watchlist:
 - **Update entries when state changes.** If the trigger gets closer or the item becomes more or less risky, update Current state.
 - **Remove entries only when the underlying tradeoff is resolved.** Do not remove because "we decided not to."
 - **The watchlist is re-read at phase boundaries.** At phase end, walk the watchlist and resolve any items whose triggers fired during the phase.
-- **There is a dedicated Watchlist Cleanup phase late in the master plan** (modeled on Ibiza FOMO Phase 17.5). At that phase, walk the entire watchlist top-to-bottom and resolve every triggered item.
+- **There is a dedicated Watchlist Cleanup phase late in the master plan** (often a fractional phase such as N.5 — name and number it in your plan). At that phase, walk the entire watchlist top-to-bottom and resolve every triggered item.
 
 ---
 
@@ -1304,9 +1343,9 @@ This is distinct from AI drift (§9.1 — the loop going off-plan) and playbook 
    - If the feature is its own vertical slice of work (new screens, new tables, new backend surface), it becomes a new phase.
 
 3. **To add a new phase:**
-   - Draft the phase using the §3 phase doc template. Give it a working goal, initial steps from what you know, the correct `Source docs:` list, and a populated `Interaction model:` (if UI is involved).
+   - Draft the phase using the §3 phase doc template (including consumer matrix when the feature adds or changes shared data). Give it a working goal, initial steps from what you know, the correct `Source docs:` list, and a populated `Interaction model:` (if UI is involved).
    - Insert it at the correct position in `13-master-build-plan.md` — **before any phase that would depend on it, after any phase whose outputs it depends on.** Re-read the affected neighbours.
-   - Re-run **Step 6a checks 1 (dependency), 2 (ordering), and 7 (cross-cutting concerns)** on the new phase and its neighbours. This is the most likely place a scope-expansion phase introduces an ordering bug.
+   - Re-run **Step 6a checks 1 (dependency), 2 (ordering), and 7 (cross-cutting concerns)** and **Step 6b check 9** on the new phase and its neighbours. This is the most likely place a scope-expansion phase introduces an ordering bug.
    - If the new feature introduces a new domain (new DB tables, new third-party service, new screen set), create or update the relevant domain doc(s) and add them to `docs/build/README.md` index.
    - If the new feature changes the project's ADR-001 stack (new service not in the original Genesis), write a new ADR for it.
    - Update `001-core-project.mdc` if the new feature changes the product scope statement or the approved package list.
@@ -1332,7 +1371,7 @@ Genesis estimates phase size upfront, but phases that seemed like "one coherent 
 **Rule for the loop (correction):** If the active phase has been running for more than 6 iterations without passing its verification list — and progress is real, not stalled — stop and split the phase:
 
 1. Identify the natural midpoint: what is already done (in `Current implementation status`) vs. what remains (in `Steps:` not yet reflected in status).
-2. Create two phases from the one: Phase Xa covers what's already done + the remaining steps to a stable intermediate state. Phase Xb covers everything after. Number them `Xa` and `Xb` (or renumber the tail of the plan if sequential numbers are important).
+2. Create two phases from the one: Phase Xa covers what's already done + the remaining steps to a stable intermediate state. Phase Xb covers everything after. Number them `Xa` and `Xb` (or renumber the tail of the plan if sequential numbers are important). If the phase had a consumer matrix (§3), split **Status** across Xa/Xb — each child phase owns its in-scope rows; nothing stays ambiguous.
 3. Mark Phase Xa's verification list as the new stop gate. It should be passable with what's already built.
 4. The current iteration completes Phase Xa. The next queue runs Phase Xb.
 

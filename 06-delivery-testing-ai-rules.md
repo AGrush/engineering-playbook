@@ -364,11 +364,11 @@ Long AI sessions drift. Chat history degrades. "The AI rewrote half the codebase
 
 There are two unit-of-work artifacts depending on how you're operating:
 
-**Phase docs (primary, for build-loop work)** — when you've adopted the Genesis & Build Cadence system from `docs/build/00-genesis-and-build-cadence.md`, the unit of AI work is a phase in `docs/build/13-master-build-plan.md`. Each phase has Goal / Source docs / Steps / Current implementation status / Verification / Do not. The loop reads the phase doc + cursor rules and executes one batch per run. See `00-…md §3` for the full phase doc template.
+**Phase docs (primary, for build-loop work)** — when you've adopted the Genesis & Build Cadence system from `docs/build/00-genesis-and-build-cadence.md`, the unit of AI work is a phase in `docs/build/13-master-build-plan.md`. Each phase has Goal / Source docs / Steps / Interaction model (UI) / Consumer matrix (when data contracts change) / Current implementation status / Verification / Do not. Prefer journey/capability phase names over subsystem stripes (see `00-…md` §3 and Step 6). The loop reads the phase doc + cursor rules and executes one batch per run. See `00-…md §3` for the full phase doc template and consumer matrix.
 
 **Task briefs (fallback, for off-loop work)** — for ad-hoc tasks that don't fit the master build plan (urgent CVE patches, exploratory refactors, one-off cleanups, debugging investigations), use a task brief.
 
-- **Brief file:** `docs/tasks/T-NNN-feature-slug.md`. Sections: **Goal**, **Inputs** (files/data the AI may read), **Outputs** (files the AI may create/edit, with paths), **Out of scope** (files NOT to touch), **Acceptance criteria** (concrete, testable — the eventual unit-test names). The brief is the spec; chat is the conversation.
+- **Brief file:** `docs/tasks/T-NNN-feature-slug.md`. Sections: **Goal**, **Inputs** (files/data the AI may read), **Outputs** (files the AI may create/edit, with paths), **Out of scope** (files NOT to touch), **Acceptance criteria** (concrete, testable — the eventual unit-test names). If the task changes shared data (column, FK, entity, status), trace consumers (grep) and meet `01-…md` §23 item 12; use `00-…md` §3 when multiple audiences apply. The brief is the spec; chat is the conversation.
 - **When to write one:** every off-loop task that touches > 5 files, > 2 packages, or introduces a new pattern. Smaller off-loop tasks can live in chat.
 - **The brief survives the session.** New session, same brief, identical scope. This is the only reliable way to resume AI work without re-explaining everything.
 - **The brief becomes the PR description.** One artifact, traceable from goal → diff → tests → reviewer notes.
