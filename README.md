@@ -13,10 +13,16 @@ The build system (`00-genesis-and-build-cadence.md`) sits on top of the playbook
 ### Quick start
 
 ```bash
-# 1. Clone the playbook into your project
-git clone https://github.com/[your-org]/engineering-playbook docs/playbook
+# From the root of your fresh repo:
 
-# 2. Open your project in Cursor and send:
+# 1. Drop the playbook in as a snapshot (no nested .git history)
+git clone --depth=1 https://github.com/AGrush/engineering-playbook docs/playbook
+rm -rf docs/playbook/.git
+
+# 2. Commit the snapshot
+git add docs/playbook && git commit -m "Add engineering playbook"
+
+# 3. Open the repo in Cursor and send:
 Start Genesis.
 ```
 
